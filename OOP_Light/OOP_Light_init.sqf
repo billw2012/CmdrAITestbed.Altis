@@ -1,5 +1,11 @@
 #include "OOP_Light.h"
 
+#ifdef ADE
+#define DUMP_CALLSTACK ade_dumpCallstack
+#else
+#define DUMP_CALLSTACK 
+#endif
+
 /*
  * This file contains some functions for OOP_Light, mainly for asserting classess, objects and members.
  * Author: Sparker
@@ -61,7 +67,7 @@ OOP_assert_class = {
 	//Check if it's a class
 	if(isNil "_memList") then {
 		[_file, _line, _classNameStr] call OOP_error_notClass;
-		ade_dumpCallstack;
+		DUMP_CALLSTACK;
 		false;
 	} else {true};
 };
@@ -75,7 +81,7 @@ OOP_assert_objectClass = {
 	//Check if it's an object
 	if(isNil "_classNameStr") then {
 		[_file, _line, _objNameStr] call OOP_error_notObject;
-		ade_dumpCallstack;
+		DUMP_CALLSTACK;
 		false;
 	} else {
 		private _parents = GET_SPECIAL_MEM(_classNameStr, PARENTS_STR);
@@ -83,7 +89,7 @@ OOP_assert_objectClass = {
 			true // all's fine
 		} else {
 			[_file, _line, _objNameStr, _classNameStr, _expectedClassNameStr] call OOP_error_wrongClass;
-			ade_dumpCallstack;
+			DUMP_CALLSTACK;
 			false
 		};
 	};
@@ -97,7 +103,7 @@ OOP_assert_object = {
 	//Check if it's an object
 	if(isNil "_classNameStr") then {
 		[_file, _line, _objNameStr] call OOP_error_notObject;
-		ade_dumpCallstack;
+		DUMP_CALLSTACK;
 		false;
 	} else {
 		true;
@@ -112,14 +118,14 @@ OOP_assert_staticMember = {
 	//Check if it's a class
 	if(isNil "_memList") exitWith {
 		[_file, _line, _classNameStr] call OOP_error_notClass;
-		ade_dumpCallstack;
+		DUMP_CALLSTACK;
 		false;
 	};
 	//Check static member
 	private _valid = _memNameStr in _memList;
 	if(!_valid) then {
 		[_file, _line, _classNameStr, _memNameStr] call OOP_error_memberNotFound;
-		ade_dumpCallstack;
+		DUMP_CALLSTACK;
 	};
 	//Return value
 	_valid
@@ -134,7 +140,7 @@ OOP_assert_member = {
 	if(isNil "_classNameStr") exitWith {
 		private _errorText = format ["class name is nil. Attempt to access member: %1", _memNameStr];
 		[_file, _line, _errorText] call OOP_error;
-		ade_dumpCallstack;
+		DUMP_CALLSTACK;
 		false;
 	};
 	//Get member list of this class
@@ -143,7 +149,7 @@ OOP_assert_member = {
 	private _valid = _memNameStr in _memList;
 	if(!_valid) then {
 		[_file, _line, _classNameStr, _memNameStr] call OOP_error_memberNotFound;
-		ade_dumpCallstack;
+		DUMP_CALLSTACK;
 	};
 	//Return value
 	_valid
@@ -156,7 +162,7 @@ OOP_assert_method = {
 	if (isNil "_classNameStr") exitWith {
 		private _errorText = format ["class name is nil. Attempt to call method: %1", _methodNameStr];
 		[_file, _line, _errorText] call OOP_error;
-		ade_dumpCallstack;
+		DUMP_CALLSTACK;
 		false;
 	};
 
@@ -165,14 +171,14 @@ OOP_assert_method = {
 	//Check if it's a class
 	if(isNil "_methodList") exitWith {
 		[_file, _line, _classNameStr] call OOP_error_notClass;
-		ade_dumpCallstack;
+		DUMP_CALLSTACK;
 		false;
 	};
 	//Check method
 	private _valid = _methodNameStr in _methodList;
 	if(!_valid) then {
 		[_file, _line, _classNameStr, _methodNameStr] call OOP_error_methodNotFound;
-		ade_dumpCallstack;
+		DUMP_CALLSTACK;
 	};
 	//Return value
 	_valid
