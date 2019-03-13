@@ -1,3 +1,7 @@
+#define OOP_DEBUG
+#define OOP_INFO
+#define OOP_WARNING
+#define OOP_ERROR
 #include "OOP_Light\OOP_Light.h"
 
 // #define LOG_SCOPE "Main"
@@ -14,8 +18,8 @@ call compile preprocessFileLineNumbers "OOP_Light\OOP_Light_init.sqf";
 // 	} forEach modules;
 // }];
 
-side_opf = "colorOPFOR";
-side_blu = "colorBLUFOR";
+side_opf = "ColorEAST";
+side_guer = "ColorGUER";
 side_no = "ColorYellow";
 
 type_outpost = "hd_flag";
@@ -360,9 +364,26 @@ CLASS("Cmdr", "")
 ENDCLASS;
 
 OOP_INFO_0("Processing markers...");
+
 // find all intesting markers
-garrisons = [allMapMarkers select { markerType _x == type_garrison }] apply { NEW("Garrison", _x) };
-outposts = [allMapMarkers select { markerType _x == type_outpost }];
+garrisons = [allMapMarkers select { markerType _x == type_garrison }] apply { 
+	private _mkr = [_x];
+	NEW("Garrison", _mkr)
+};
+outposts = allMapMarkers select { markerType _x == type_outpost };
+private _garrisonedOutposts = outposts select { count (markerText _x) > 0 };
+garrisons = garrisons + (_garrisonedOutposts apply {
+	private _outpostMkr = _x;
+	private _newGarrMkr = createMarker [ _outpostMkr + "_garr", markerPos _outpostMkr ];
+	OOP_INFO_2("Adding garrison %1 for outpost %2...", _newGarrMkr, _outpostMkr);
+	_newGarrMkr setMarkerShape "ICON";
+	_newGarrMkr setMarkerType type_garrison;
+	_newGarrMkr setMarkerColor (markerColor _outpostMkr);
+	_newGarrMkr setMarkerText (markerText _outpostMkr);
+	_outpostMkr setMarkerText "";
+	NEW("Garrison", [_newGarrMkr])
+});
+
 OOP_INFO_2("Found %1 garrisons and %2 outposts...", count garrisons, count outposts);
 
 OpforCommander = NEW("Cmdr", [side_opf]);

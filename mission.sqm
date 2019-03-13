@@ -8,7 +8,11 @@ class EditorData
 	toggles=1;
 	class ItemIDProvider
 	{
-		nextID=2;
+		nextID=6;
+	};
+	class MarkerIDProvider
+	{
+		nextID=3;
 	};
 	class Camera
 	{
@@ -21,17 +25,25 @@ class EditorData
 binarizationWanted=0;
 addons[]=
 {
-	"A3_Characters_F"
+	"A3_Characters_F",
+	"A3_Ui_F"
 };
 class AddonsMetaData
 {
 	class List
 	{
-		items=1;
+		items=2;
 		class Item0
 		{
 			className="A3_Characters_F";
 			name="Arma 3 Alpha - Characters and Clothing";
+			author="Bohemia Interactive";
+			url="https://www.arma3.com";
+		};
+		class Item1
+		{
+			className="A3_Ui_F";
+			name="Arma 3 - User Interface";
 			author="Bohemia Interactive";
 			url="https://www.arma3.com";
 		};
@@ -66,7 +78,7 @@ class Mission
 	};
 	class Entities
 	{
-		items=1;
+		items=5;
 		class Item0
 		{
 			dataType="Group";
@@ -95,6 +107,49 @@ class Mission
 			{
 			};
 			id=0;
+		};
+		class Item1
+		{
+			dataType="Marker";
+			position[]={12842.785,86.637001,16657.867};
+			name="marker_0";
+			text="3/3";
+			type="mil_flag";
+			colorName="ColorEAST";
+			id=2;
+			atlOffset=-2.7527542;
+		};
+		class Item2
+		{
+			dataType="Marker";
+			position[]={12496.794,70.806,15129.693};
+			name="marker_1";
+			text="4/5";
+			type="mil_flag";
+			colorName="ColorGUER";
+			id=3;
+			atlOffset=4.0288773;
+		};
+		class Item3
+		{
+			dataType="Marker";
+			position[]={11840.85,29.15764,15281.069};
+			name="marker_2";
+			text="3/6";
+			type="mil_box";
+			colorName="ColorGUER";
+			id=4;
+		};
+		class Item4
+		{
+			dataType="Marker";
+			position[]={11855.266,41.169998,16362.326};
+			name="marker_3";
+			text="4/0";
+			type="mil_box";
+			colorName="ColorEAST";
+			id=5;
+			atlOffset=-0.0004196167;
 		};
 	};
 };
