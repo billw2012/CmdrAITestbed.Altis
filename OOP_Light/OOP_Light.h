@@ -335,7 +335,8 @@ NAMESPACE setVariable [CLASS_METHOD_NAME_STR(_oop_classNameStr, methodNameStr), 
  * The methods of base class are copied to the methods of the derived class, except for "new" and "delete", because they will be called through the hierarchy anyway.
  */
 
-#define CLASS(classNameStr, baseClassNameStr) \
+#define CLASS(classNameStr, baseClassNameStr)	 \
+scopeName "scopeClass"; \
 private _oop_classNameStr = classNameStr; \
 SET_SPECIAL_MEM(_oop_classNameStr, NEXT_ID_STR, 0); \
 private _oop_memList = []; \
@@ -344,15 +345,14 @@ private _oop_parents = []; \
 private _oop_methodList = []; \
 private _oop_newMethodList = []; \
 if (baseClassNameStr != "") then { \
-	if (!([baseClassNameStr, __FILE__, __LINE__] call OOP_assert_class)) then { throw format ["%1: Invalid base class %2", classNameStr, baseClassNameStr]; }; \
+	if (!([baseClassNameStr, __FILE__, __LINE__] call OOP_assert_class)) then {breakOut "scopeClass";}; \
 	_oop_parents = +GET_SPECIAL_MEM(baseClassNameStr, PARENTS_STR); _oop_parents pushBackUnique baseClassNameStr; \
 	_oop_memList = +GET_SPECIAL_MEM(baseClassNameStr, MEM_LIST_STR); \
 	_oop_staticMemList = +GET_SPECIAL_MEM(baseClassNameStr, STATIC_MEM_LIST_STR); \
 	_oop_methodList = +GET_SPECIAL_MEM(baseClassNameStr, METHOD_LIST_STR); \
 	private _oop_topParent = _oop_parents select ((count _oop_parents) - 1); \
-	{ \
-		private _oop_methodCode = FORCE_GET_METHOD(_oop_topParent, _x); \
-		FORCE_SET_METHOD(classNameStr, _x, _oop_methodCode); \
+	{ private _oop_methodCode = FORCE_GET_METHOD(_oop_topParent, _x); \
+	FORCE_SET_METHOD(classNameStr, _x, _oop_methodCode); \
 	} forEach (_oop_methodList - ["new", "delete", "copy"]); \
 }; \
 SET_SPECIAL_MEM(_oop_classNameStr, PARENTS_STR, _oop_parents); \

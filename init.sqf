@@ -14,7 +14,6 @@ call compile preprocessFileLineNumbers "OOP_Light\OOP_Light_init.sqf";
 // {
 // 	{
 // 		_x params ["_delete", "_source_file"];
-
 // 	} forEach modules;
 // }];
 
@@ -22,7 +21,7 @@ side_opf = "ColorEAST";
 side_guer = "ColorGUER";
 side_no = "ColorYellow";
 
-type_outpost = "hd_flag";
+type_outpost = "mil_flag";
 type_garrison = "mil_box";
 
 order_types = [];
@@ -96,9 +95,12 @@ CLASS("Garrison", "")
 		T_SETV("marker", _marker);
 
 		private _parts = (markerText _marker) splitString ", :;/";
+
 		private _unit_count = if(count _parts >= 1) then { parseNumber (_parts select 0) } else { 0 };
 		private _veh_count = if(count _parts >= 2) then { parseNumber (_parts select 1) } else { 0 };
 
+		OOP_INFO_3("Creating Garrison from %1 [%2/%3]", _marker, _unit_count, _veh_count);
+		
 		T_SETV("unit_count", _unit_count);
 		T_SETV("veh_count", _veh_count);
 		T_SETV("order", objNull);
@@ -141,8 +143,14 @@ CLASS("Garrison", "")
 		params [P_THISOBJECT];
 		T_PRVAR(unit_count);
 		T_PRVAR(veh_count);
-
 		_unit_count * UNIT_STRENGTH + _veh_count * VEHICLE_STRENGTH
+	} ENDMETHOD;
+
+	METHOD("isDead") {
+		params [P_THISOBJECT];
+		T_PRVAR(unit_count);
+		T_PRVAR(veh_count);
+		(_unit_count + _veh_count) == 0
 	} ENDMETHOD;
 
 	METHOD("update") {
@@ -163,44 +171,40 @@ CLASS("Garrison", "")
 
 	METHOD("fight_update") {
 		params [P_THISOBJECT, P_STRING("_other")];
-		private _dead = [];
+
+		if(T_CALLM0("isDead") or CALLM0(_other, "isDead")) exitWith {};
 
 		T_PRVAR(unit_count);
 		T_PRVAR(veh_count);
 
 		private _other_unit_count = GETV(_other, "unit_count");
 		private _other_veh_count = GETV(_other, "veh_count");
+
+		private _msg = format ["Fighting %1 [%2/%3] vs %4 [%5/%6]", _thisObject, _unit_count, _veh_count, _other, _other_unit_count, _other_veh_count];
+
+		OOP_INFO_0(_msg);
+		// OOP_INFO_4("Fighting %1 [%2/%3] vs %3 [%4]", _thisObject, _other);
 		private _total = _unit_count + _veh_count + _other_unit_count + _other_veh_count;
 
 		for "_i" from 0 to random(_total - 1) do
 		{
-			private _idx = random(_unit_count + _veh_count - 1);
-			private _idx2 = random(_other_unit_count + _other_veh_count - 1);
-			if(_idx < _unit_count) then {
-				if(_idx2 < _other_unit_count) then {
-					if(random (UNIT_STRENGTH + UNIT_STRENGTH) < UNIT_STRENGTH) then {
-						_unit_count = _unit_count - 1;
-					} else {
-						_other_unit_count = _other_unit_count - 1;
-					};
-				} else {
-					if(random (UNIT_STRENGTH + VEHICLE_STRENGTH) < VEHICLE_STRENGTH) then {
-						_unit_count = _unit_count - 1;
-					} else {
-						_other_veh_count = _other_veh_count - 1;
-					};
-				};
-			} else  {
-				if(random (VEHICLE_STRENGTH + UNIT_STRENGTH) < UNIT_STRENGTH) then {
-					_veh_count = _veh_count - 1;
-				} else {
+			private _ourStrength = _unit_count * UNIT_STRENGTH + _veh_count * VEHICLE_STRENGTH;
+			private _theirStrength = _other_unit_count * UNIT_STRENGTH + _other_veh_count * VEHICLE_STRENGTH;
+			
+			if(_ourStrength == 0) exitWith { OOP_INFO_1("%1 died", _thisObject) };
+			if(_theirStrength == 0) exitWith { OOP_INFO_1("%1 died", _other) };
+
+			if(random(_ourStrength + _theirStrength) < _ourStrength) then {
+				if((_other_veh_count == 0) or (random(UNIT_STRENGTH + VEHICLE_STRENGTH) < VEHICLE_STRENGTH)) then {
 					_other_unit_count = _other_unit_count - 1;
-				};
-			} else {
-				if(random (VEHICLE_STRENGTH + VEHICLE_STRENGTH) < VEHICLE_STRENGTH) then {
-					_veh_count = _veh_count - 1;
 				} else {
 					_other_veh_count = _other_veh_count - 1;
+				};
+			} else {
+				if((_veh_count == 0) or (random(UNIT_STRENGTH + VEHICLE_STRENGTH) < VEHICLE_STRENGTH)) then {
+					_unit_count = _unit_count - 1;
+				} else {
+					_veh_count = _veh_count - 1;
 				};
 			};
 		};
@@ -216,13 +220,20 @@ CLASS("Garrison", "")
 ENDCLASS;
 
 CLASS("Action", "")
+	VARIABLE("score");
+
 	METHOD("new") {
 		params [P_THISOBJECT];
-		
+		T_SETV("score", -1);
+	} ENDMETHOD;
+
+	METHOD("updateScore") {
+		params [P_THISOBJECT, P_STRING("_state")];
 	} ENDMETHOD;
 
 	METHOD("getScore") {
 		params [P_THISOBJECT];
+		T_GETV("score")
 	} ENDMETHOD;
 ENDCLASS;
 
@@ -231,18 +242,25 @@ CLASS("AttackAction", "")
 	VARIABLE("their_garr");
 
 	METHOD("new") {
-		params [P_THISOBJECT, P_OBJECT("_our_garr"), P_OBJECT("_their_garr")];
-
+		params [P_THISOBJECT, P_STRING("_our_garr"), P_STRING("_their_garr")];
+		OOP_INFO_2("New AttackAction created %1->%2", _our_garr, _their_garr);
 		T_SETV("our_garr", _our_garr);
 		T_SETV("their_garr", _their_garr);
 	} ENDMETHOD;
 
-	METHOD("getScore") {
-		params [P_THISOBJECT];
+	METHOD("updateScore") {
+		params [P_THISOBJECT, P_STRING("_state")];
 		T_PRVAR(our_garr);
 		T_PRVAR(their_garr);
 		// TODO actual score
-		2
+		1
+	} ENDMETHOD;
+		
+	METHOD("apply") {
+		params [P_THISOBJECT, P_STRING("_state")];
+		T_PRVAR(our_garr);
+		T_PRVAR(their_garr);
+		// TODO actually apply
 	} ENDMETHOD;
 ENDCLASS;
 
@@ -251,26 +269,25 @@ CLASS("ReinforceAction", "")
 	VARIABLE("their_garr");
 
 	METHOD("new") {
-		params [P_THISOBJECT, P_OBJECT("_our_garr"), P_OBJECT("_their_garr")];
-
+		params [P_THISOBJECT, P_STRING("_our_garr"), P_STRING("_their_garr")];
+		OOP_INFO_2("New ReinforceAction created %1->%2", _our_garr, _their_garr);
 		T_SETV("our_garr", _our_garr);
 		T_SETV("their_garr", _their_garr);
 	} ENDMETHOD;
 
 	METHOD("updateScore") {
-		params [P_THISOBJECT];
+		params [P_THISOBJECT, P_STRING("_state")];
 		T_PRVAR(our_garr);
 		T_PRVAR(their_garr);
 		// TODO actual score
 		1
 	} ENDMETHOD;
-
-	METHOD("getScore") {
-		params [P_THISOBJECT];
+	
+	METHOD("apply") {
+		params [P_THISOBJECT, P_STRING("_state")];
 		T_PRVAR(our_garr);
 		T_PRVAR(their_garr);
-		// TODO actual score
-		1
+		// TODO actually apply
 	} ENDMETHOD;
 ENDCLASS;
 
@@ -280,8 +297,7 @@ CLASS("Cmdr", "")
 
 	METHOD("new") {
 		params [P_THISOBJECT, P_STRING("_cmdr_side")];
-		T_SETV("cmdr_side", _cmdr_side)
-		
+		T_SETV("cmdr_side", _cmdr_side);
 	} ENDMETHOD;
 
 	METHOD("generateAttackActions") {
@@ -296,7 +312,7 @@ CLASS("Cmdr", "")
 			private _enemy_garr = _x;
 			{
 				private _params = [_x, _enemy_garr];
-				_actions pushBack NEW("AttackAction", _params);
+				_actions pushBack (NEW("AttackAction", _params));
 			} forEach (_our_garrisons select { CALLM0(_x, "getStrength") > CALLM0(_enemy_garr, "getStrength") });
 		} forEach _enemy_garrisons;
 
@@ -314,7 +330,7 @@ CLASS("Cmdr", "")
 			private _garr_a = _x;
 			{
 				private _params = [_garr_a, _x];
-				_actions pushBack NEW("ReinforceAction", _params);
+				_actions pushBack (NEW("ReinforceAction", _params));
 			} forEach (_our_garrisons - [_garr_a]);
 		} forEach _our_garrisons;
 
@@ -347,16 +363,16 @@ CLASS("Cmdr", "")
 
 		// Generate a plan
 		private _plan = [];
-		private _lastPlanSize = -1;
-		while { _lastPlanSize != count _plan && count _allActions > 0} do {
-			_lastPlanSize = count _plan;
-
+		while { count _allActions > 0 } do {
 			{
 				CALLM0(_x, "updateScore");
 			} forEach _allActions;
 
 			_allActions = [_allActions, [], { CALLM0(_x, "getScore") }, "DECEND"] call BIS_fnc_sortBy;
-			_plan pushBack (_allActions deleteAt 0);
+			private _bestAction = _allActions deleteAt 0;
+			_plan pushBack _bestAction;
+
+			// Apply new action to state copy
 		};
 
 	} ENDMETHOD;
@@ -365,27 +381,69 @@ ENDCLASS;
 
 OOP_INFO_0("Processing markers...");
 
-// find all intesting markers
-garrisons = [allMapMarkers select { markerType _x == type_garrison }] apply { 
-	private _mkr = [_x];
-	NEW("Garrison", _mkr)
-};
-outposts = allMapMarkers select { markerType _x == type_outpost };
-private _garrisonedOutposts = outposts select { count (markerText _x) > 0 };
-garrisons = garrisons + (_garrisonedOutposts apply {
-	private _outpostMkr = _x;
-	private _newGarrMkr = createMarker [ _outpostMkr + "_garr", markerPos _outpostMkr ];
-	OOP_INFO_2("Adding garrison %1 for outpost %2...", _newGarrMkr, _outpostMkr);
-	_newGarrMkr setMarkerShape "ICON";
-	_newGarrMkr setMarkerType type_garrison;
-	_newGarrMkr setMarkerColor (markerColor _outpostMkr);
-	_newGarrMkr setMarkerText (markerText _outpostMkr);
-	_outpostMkr setMarkerText "";
-	NEW("Garrison", [_newGarrMkr])
-});
+CLASS("State", "")
+	VARIABLE("garrisons");
+	VARIABLE("outposts");
 
-OOP_INFO_2("Found %1 garrisons and %2 outposts...", count garrisons, count outposts);
+	METHOD("new") {
+		params [P_THISOBJECT, P_ARRAY("_markers")];
 
+		// find all intesting markers
+		private _garrisons = (_markers select { markerType _x == type_garrison }) apply { NEW("Garrison", [_x]) };
+		private _outposts = _markers select { markerType _x == type_outpost };
+		private _garrisonedOutposts = _outposts select { count (markerText _x) > 0 };
+		private _outpostGarrs = _garrisonedOutposts apply {
+			private _outpostMkr = _x;
+			private _newGarrMkr = createMarker [ _outpostMkr + "_garr", markerPos _outpostMkr ];
+			OOP_INFO_2("Adding garrison %1 for outpost %2...", _newGarrMkr, _outpostMkr);
+			_newGarrMkr setMarkerShape "ICON";
+			_newGarrMkr setMarkerType type_garrison;
+			_newGarrMkr setMarkerColor (markerColor _outpostMkr);
+			_newGarrMkr setMarkerText (markerText _outpostMkr);
+			_outpostMkr setMarkerText "";
+			NEW("Garrison", [_newGarrMkr])
+		};
+		_garrisons = _garrisons + _outpostGarrs;
+
+		OOP_INFO_2("Found %1 garrisons and %2 outposts...", count _garrisons, count _outposts);
+		T_SETV("garrisons", _garrisons);
+		T_SETV("outposts", _outposts);
+	} ENDMETHOD;
+
+	METHOD("clone") {
+		params [P_THISOBJECT];
+		
+	} ENDMETHOD;
+	
+
+	METHOD("update") {
+		params [P_THISOBJECT];
+		T_PRVAR(_garrisons);
+		// Update garrisons
+		{
+			CALLM0(_x, "update");
+		} forEach _garrisons;
+
+		// Perform combat
+		private _calcedGarrisons = [];
+		{
+			private _curr = _x;
+			if !(_x in _calcedGarrisons) then {
+				_calcedGarrisons pushBack _x;
+				private _otherGarrisons = (_garrisons - _calcedGarrisons) select { (CALLM0(_curr, "getPos") distance CALLM0(_x, "getPos")) < 500 };
+				{
+					CALLM1(_curr, "fight_update", _x);
+				} forEach _otherGarrisons;
+				_calcedGarrisons = _calcedGarrisons + _otherGarrisons;
+			};
+		} forEach _garrisons;
+
+	} ENDMETHOD;
+	
+
+ENDCLASS;
+
+State = NEW("State", [allMapMarkers]);
 OpforCommander = NEW("Cmdr", [side_opf]);
 
 #define PLAN_INTERVAL 30
@@ -400,24 +458,7 @@ OOP_INFO_0("Spawning AI thread...");
 			_itr = 0;
 		};
 
-		// Update garrisons
-		{
-			CALLM0(_x, "update");
-		} forEach garrisons;
-
-		// Perform combat
-		private _calcedGarrisons = [];
-		{
-			private _curr = _x;
-			if !(_x in _calcedGarrisons) then {
-				_calcedGarrisons pushBack _x;
-				private _otherGarrisons = (garrisons - [_calcedGarrisons]) select { (CALLM0(_curr, "getPos") distance CALLM0(_x, "getPos")) < 500 };
-				{
-					CALLM1(_curr, "fight_update", _x);
-				} forEach _otherGarrisons;
-				_calcedGarrisons = _calcedGarrisons + _otherGarrisons;
-			};
-		} forEach garrisons;
+		CALLM0(State, "update");
 
 		sleep 0.1;
 		_itr = _itr + 1;
