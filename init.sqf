@@ -19,7 +19,7 @@ call compile preprocessFileLineNumbers "OOP_Light\OOP_Light_init.sqf";
 
 side_opf = "ColorEAST";
 side_guer = "ColorGUER";
-side_no = "ColorYellow";
+side_none = "ColorYellow";
 
 type_outpost = "mil_flag";
 type_garrison = "mil_box";
@@ -40,19 +40,19 @@ ENDCLASS;
 
 // Move garrison to position
 CLASS("MoveOrder", "Order")
-	VARIABLE("target");
-	VARIABLE("garrison");
+	VARIABLE("targetId");
+	VARIABLE("garrisonId");
 	VARIABLE("lastT");
 
 	METHOD("new") {
-		params [P_THISOBJECT, P_STRING("_name"), P_STRING("_target"), P_OBJECT("_garrison")];
-		T_SETV("target", _target);
-		T_SETV("garrison", _garrison);
+		params [P_THISOBJECT, P_STRING("_name"), P_STRING("_targetId"), P_STRING("_garrisonId")];
+		T_SETV("targetId", _target);
+		T_SETV("garrisonId", _garrison);
 		T_SETV("lastT", time);
 	} ENDMETHOD;
 
 	METHOD("update") {
-		params [P_THISOBJECT];
+		params [P_THISOBJECT, P_STRING("_state")];
 		T_PRVAR(target);
 		T_PRVAR(garrison);
 		T_PRVAR(lastT);
@@ -89,8 +89,21 @@ CLASS("Garrison", "")
 	VARIABLE("veh_count");
 	VARIABLE("order");
 	VARIABLE("in_combat");
+	VARIABLE("pos");
+	VARIABLE("side");
 
 	METHOD("new") {
+		params [P_THISOBJECT];
+		T_SETV("marker", objNull);
+		T_SETV("unit_count", 0);
+		T_SETV("veh_count", 0);
+		T_SETV("order", objNull);
+		T_SETV("in_combat", false);
+		T_SETV("pos", []);
+		T_SETV("side", side_none);
+	} ENDMETHOD;
+
+	METHOD("initFromMarker") {
 		params [P_THISOBJECT, P_STRING("_marker")];
 		T_SETV("marker", _marker);
 
@@ -99,12 +112,51 @@ CLASS("Garrison", "")
 		private _unit_count = if(count _parts >= 1) then { parseNumber (_parts select 0) } else { 0 };
 		private _veh_count = if(count _parts >= 2) then { parseNumber (_parts select 1) } else { 0 };
 
-		OOP_INFO_3("Creating Garrison from %1 [%2/%3]", _marker, _unit_count, _veh_count);
+		OOP_INFO_3("Initializing Garrison from %1 [%2/%3]", _marker, _unit_count, _veh_count);
 		
 		T_SETV("unit_count", _unit_count);
 		T_SETV("veh_count", _veh_count);
 		T_SETV("order", objNull);
 		T_SETV("in_combat", false);
+		T_SETV("pos", markerPos _marker);
+		T_SETV("side", markerColor _marker);
+	} ENDMETHOD;
+
+	/*
+
+	To iterate plan and correctly score actions we need to take into account the existing state, including orders (so we
+	don't duplicate orders to reinforce for instance), and any already planned actions. 
+	What is the difference between actions and orders?
+		Actions are a unit of planning, orders are how a garrison helps achieve the actions goals.
+	
+	Does simulation need to happen at action or order level? 
+		In progress orders need to be taken into account. This could be done during scoring by looking at in progress
+		and planned actions?
+		Perhaps actions need an simApply function to immediately update state to their simulated results? Yes.
+		Do orders need this? Yes. Action might be partially completed, so simApply wouldn't necessarily be correct.
+		Also maybe orders come from elsewhere.
+		We should implement simApply in terms of applying orders instead of separately. Use the same order generation, 
+		just run it to completion? In future this can do time step simulation.
+	
+	What requirements does this entail?
+		Need to be able to clone entire state:
+		This means garrisons and their current orders at least.
+		Orders point to items in the state. So we need garrison IDs instead of pointers to objects, so that
+		cloned orders can point to cloned everything else.
+		Update/apply functions etc will be taking a state object that they apply to.
+	*/
+	METHOD("getSim") {
+		params [P_THISOBJECT];
+		private _newGarr = NEW("Garrison", []);
+		
+		SETV(_newGarr, "unit_count", T_GETV("unit_count"));
+		SETV(_newGarr, "veh_count", T_GETV("veh_count"));
+		SETV(_newGarr, "order", T_GETV("order"));
+		SETV(_newGarr, "in_combat", T_GETV("in_combat"));
+		SETV(_newGarr, "pos", +T_GETV("pos"));
+		SETV(_newGarr, "side", T_GETV("side"));
+
+		_newGarr
 	} ENDMETHOD;
 
 	METHOD("getPos") {
