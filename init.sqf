@@ -20,12 +20,15 @@ order_types = [];
 
 call compile preprocessFileLineNumbers "Scripts\Garrison.sqf";
 call compile preprocessFileLineNumbers "Scripts\Orders.sqf";
-call compile preprocessFileLineNumbers "Scripts\Actions.sqf";
+call compile preprocessFileLineNumbers "Scripts\Action.sqf";
+call compile preprocessFileLineNumbers "Scripts\AttackAction.sqf";
+call compile preprocessFileLineNumbers "Scripts\ReinforceAction.sqf";
 call compile preprocessFileLineNumbers "Scripts\State.sqf";
 call compile preprocessFileLineNumbers "Scripts\Cmdr.sqf";
 
 OOP_INFO_0("Initializing state...");
-State = NEW("State", [allMapMarkers]);
+State = NEW("State", []);
+CALLM1(State, "initFromMarkers", allMapMarkers);
 
 OpforCommander = NEW("Cmdr", [side_opf]);
 
@@ -37,7 +40,7 @@ OOP_INFO_0("Spawning AI thread...");
 	while {true} do {
 		if(_itr == PLAN_INTERVAL) then {
 			// Update commander AIs
-			CALLM0(OpforCommander, "update");
+			CALLM1(OpforCommander, "update", State);
 			_itr = 0;
 		};
 

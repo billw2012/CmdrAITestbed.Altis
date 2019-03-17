@@ -22,7 +22,11 @@ CLASS("State", "")
 		params [P_THISOBJECT, P_ARRAY("_markers")];
 
 		// find all intesting markers
-		private _garrisons = (_markers select { markerType _x == type_garrison }) apply { NEW("Garrison", [_x]) };
+		private _garrisons = (_markers select { markerType _x == type_garrison }) apply { 
+			private _newGarrison = NEW("Garrison", []);
+			CALLM1(_newGarrison, "initFromMarker", _x);
+			_newGarrison
+		};
 		private _outposts = _markers select { markerType _x == type_outpost };
 		private _garrisonedOutposts = _outposts select { count (markerText _x) > 0 };
 		private _outpostGarrs = _garrisonedOutposts apply {
@@ -34,7 +38,9 @@ CLASS("State", "")
 			_newGarrMkr setMarkerColor (markerColor _outpostMkr);
 			_newGarrMkr setMarkerText (markerText _outpostMkr);
 			_outpostMkr setMarkerText "";
-			NEW("Garrison", [_newGarrMkr])
+			private _newGarrison = NEW("Garrison", []);
+			CALLM1(_newGarrison, "initFromMarker", _newGarrMkr);
+			_newGarrison
 		};
 		_garrisons = _garrisons + _outpostGarrs;
 
@@ -43,6 +49,12 @@ CLASS("State", "")
 		T_SETV("outposts", _outposts);
 	} ENDMETHOD;
 
+	METHOD("addGarrison") {
+		params [P_THISOBJECT, P_STRING("_newGarr")];
+		T_PRVAR(garrisons);
+		_garrisons pushBack _newGarr
+	} ENDMETHOD;
+	
 	METHOD("getGarrisonById") {
 		params [P_THISOBJECT, P_NUMBER("_id")];
 		T_PRVAR(garrisons);
@@ -77,7 +89,7 @@ CLASS("State", "")
 
 		// Update garrisons
 		{
-			CALLM0(_x, "update");
+			CALLM1(_x, "update", _thisObject);
 		} forEach _garrisons;
 
 		// Perform combat
@@ -86,7 +98,10 @@ CLASS("State", "")
 			private _curr = _x;
 			if !(_x in _calcedGarrisons) then {
 				_calcedGarrisons pushBack _x;
-				private _otherGarrisons = (_garrisons - _calcedGarrisons) select { (CALLM0(_curr, "getPos") distance CALLM0(_x, "getPos")) < 500 };
+				private _otherGarrisons = (_garrisons - _calcedGarrisons) select { 
+					CALLM0(_curr, "getSide") != CALLM0(_x, "getSide") and
+					(CALLM0(_curr, "getPos") distance CALLM0(_x, "getPos")) < 500 
+				};
 				{
 					CALLM1(_curr, "fightUpdate", _x);
 				} forEach _otherGarrisons;
@@ -96,4 +111,29 @@ CLASS("State", "")
 
 	} ENDMETHOD;
 	
+	// Action toolkit
+
+	// Get desired composition of forces at a particular location.
+	METHOD("getDesiredComp") {
+		params [P_THISOBJECT, P_ARRAY("_pos")];
+		// TODO: calculate this based on threat levels / whatever.
+		// For now just 10 units, 2 vehicles is desired strength
+		[10, 2]
+	} ENDMETHOD;
+
+	// How much over desired composition is the garrison? Negative for under.
+	METHOD("getOverDesiredComp") {
+		params [P_THISOBJECT, P_STRING("_garr")];
+		
+		private _pos = CALLM0(_garr, "getPos");
+		private _comp = [GETV(_garr, "unitCount"), GETV(_garr, "vehCount")];
+		private _desiredComp = T_CALLM1("getDesiredComp", _pos);
+		[
+			// units
+			(_comp select 0) - (_desiredComp select 0),
+			// vehicles
+			(_comp select 1) - (_desiredComp select 1)
+		]
+	} ENDMETHOD;
+
 ENDCLASS;

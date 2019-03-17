@@ -8,7 +8,7 @@ class EditorData
 	toggles=1;
 	class ItemIDProvider
 	{
-		nextID=6;
+		nextID=9;
 	};
 	class MarkerIDProvider
 	{
@@ -78,7 +78,7 @@ class Mission
 	};
 	class Entities
 	{
-		items=5;
+		items=6;
 		class Item0
 		{
 			dataType="Group";
@@ -111,45 +111,57 @@ class Mission
 		class Item1
 		{
 			dataType="Marker";
-			position[]={12842.785,86.637001,16657.867};
-			name="marker_0";
-			text="3/3";
+			position[]={12479.363,22.421,15189.953};
+			name="marker_1";
+			text="20/10";
 			type="mil_flag";
 			colorName="ColorEAST";
-			id=2;
-			atlOffset=-2.7527542;
+			id=3;
+			atlOffset=-52.779922;
 		};
 		class Item2
 		{
 			dataType="Marker";
-			position[]={12496.794,70.806,15129.693};
-			name="marker_1";
-			text="4/5";
-			type="mil_flag";
-			colorName="ColorGUER";
-			id=3;
-			atlOffset=4.0288773;
+			position[]={13007.173,16.663086,16242.39};
+			name="marker_2";
+			text="1/0";
+			type="mil_box";
+			colorName="ColorEAST";
+			id=4;
+			atlOffset=-4.160511;
 		};
 		class Item3
 		{
 			dataType="Marker";
-			position[]={11840.85,29.15764,15281.069};
-			name="marker_2";
-			text="3/6";
+			position[]={11912.424,27.785999,16110.439};
+			name="marker_3";
+			text="9/1";
 			type="mil_box";
-			colorName="ColorGUER";
-			id=4;
+			colorName="ColorEAST";
+			id=6;
+			atlOffset=-4.160181;
 		};
 		class Item4
 		{
 			dataType="Marker";
-			position[]={11855.266,41.169998,16362.326};
-			name="marker_3";
-			text="4/0";
+			position[]={13843.603,-38.431,15824.326};
+			name="marker_4";
+			text="20/10";
+			type="mil_flag";
+			colorName="ColorEAST";
+			id=7;
+			atlOffset=-52.780102;
+		};
+		class Item5
+		{
+			dataType="Marker";
+			position[]={14045.919,10.383,16475.297};
+			name="marker_5";
+			text="5/4";
 			type="mil_box";
 			colorName="ColorEAST";
-			id=5;
-			atlOffset=-0.0004196167;
+			id=8;
+			atlOffset=-4.1604195;
 		};
 	};
 };

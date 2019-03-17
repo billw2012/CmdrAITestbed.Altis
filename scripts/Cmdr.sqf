@@ -7,7 +7,6 @@
 
 #include "Constants.h"
 
-
 // Commander planning AI
 CLASS("Cmdr", "")
 	VARIABLE("cmdrSide");
@@ -16,10 +15,19 @@ CLASS("Cmdr", "")
 	METHOD("new") {
 		params [P_THISOBJECT, P_STRING("_cmdrSide")];
 		T_SETV("cmdrSide", _cmdrSide);
+		T_SETV("activeActions", []);
 	} ENDMETHOD;
 
+	fn_isValidAttackSource = {
+		!CALLM0(_this, "isDead") and CALLM0(_this, "getSide") == _cmdrSide
+	};
+
+	fn_isValidAttackTarget = {
+		!CALLM0(_this, "isDead") and CALLM0(_this, "getSide") != _cmdrSide
+	};
+
 	METHOD("generateAttackActions") {
-		params [P_THISOBJECT, P_STRING("state")];
+		params [P_THISOBJECT, P_STRING("_state")];
 
 		private _garrisons = GETV(_state, "garrisons");
 
@@ -29,10 +37,10 @@ CLASS("Cmdr", "")
 
 		for "_i" from 0 to count _garrisons - 1 do {
 			private _enemyGarr = _garrisons select _i;
-			if(CALLM0(_enemyGarr, "getSide") != _cmdrSide) then {
+			if(_enemyGarr call fn_isValidAttackTarget) then {
 				for "_j" from 0 to count _garrisons - 1 do {
 					private _ourGarr = _garrisons select _j;
-					if((CALLM0(_ourGarr, "getSide") == _cmdrSide) and (CALLM0(_ourGarr, "getStrength") > CALLM0(_enemyGarr, "getStrength"))) then {
+					if((_ourGarr call fn_isValidAttackSource) and (CALLM0(_ourGarr, "getStrength") > CALLM0(_enemyGarr, "getStrength"))) then {
 						private _params = [_j, _i];
 						_actions pushBack (NEW("AttackAction", _params));
 					};
@@ -43,8 +51,16 @@ CLASS("Cmdr", "")
 		_actions
 	} ENDMETHOD;
 
+	fn_isValidReinfGarr = {
+		if(CALLM0(_this, "isDead") or (CALLM0(_this, "getSide") != _cmdrSide)) exitWith { false };
+		private _action = GETV(_this, "currAction");
+		if(!(_action isEqualType "")) exitWith { true };
+
+		OBJECT_PARENT_CLASS_STR(_action) != "ReinforceAction"
+	};
+
 	METHOD("generateReinforceActions") {
-		params [P_THISOBJECT, P_STRING("state")];
+		params [P_THISOBJECT, P_STRING("_state")];
 
 		private _garrisons = GETV(_state, "garrisons");
 
@@ -53,10 +69,14 @@ CLASS("Cmdr", "")
 
 		private _actions = [];
 		for "_i" from 0 to count _garrisons - 1 do {
-			for "_j" from 0 to count _garrisons - 1 do {
-				if(_i != _j) then {
-					private _params = [_i, _j];
-					_actions pushBack (NEW("ReinforceAction", _params));
+			private _srcGarr = _garrisons select _i;
+			if(_srcGarr call fn_isValidReinfGarr) then {
+				for "_j" from 0 to count _garrisons - 1 do {
+					private _tgtGarr = _garrisons select _j;
+					if((_i != _j) and (_tgtGarr call fn_isValidReinfGarr)) then {
+						private _params = [_i, _j];
+						_actions pushBack (NEW("ReinforceAction", _params));
+					};
 				};
 			};
 		};
@@ -65,7 +85,7 @@ CLASS("Cmdr", "")
 	} ENDMETHOD;
 
 	METHOD("generateRoadblockActions") {
-		params [P_THISOBJECT, P_STRING("state")];
+		params [P_THISOBJECT, P_STRING("_state")];
 
 		private _garrisons = GETV(_state, "garrisons");
 
@@ -76,31 +96,48 @@ CLASS("Cmdr", "")
 	} ENDMETHOD;
 
 	METHOD("update") {
-		params [P_THISOBJECT, P_STRING("state")];
+		params [P_THISOBJECT, P_STRING("_state")];
+
+		T_PRVAR(activeActions);
 
 		// Copy state to simstate
-		private _simState = CALLM0(_state, "copySim");
+		private _simState = CALLM0(_state, "simCopy");
 
 		// Generate possible actions
-		private _allActions = T_CALLM1("generateAttackActions", _simState) + T_CALLM1("generateReinforceActions", _simState) + T_CALLM1("generateRoadblockActions", _simState);
+		private _newActions = T_CALLM1("generateAttackActions", _simState) + T_CALLM1("generateReinforceActions", _simState) + T_CALLM1("generateRoadblockActions", _simState);
 
 		// Apply active actions to the simstate
-		CALLM0(_simState, "applyActiveActions");
+		{
+			CALLM1(_x, "applyToSim", _simState);
+		} forEach _activeActions;
 
-		// Generate a plan
-		private _plan = [];
-		while { count _allActions > 0 } do {
+		// Create any new actions
+		while { count _newActions > 0 } do {
 			{
 				CALLM1(_x, "updateScore", _simState);
-			} forEach _allActions;
+			} forEach _newActions;
 
-			_allActions = [_allActions, [], { CALLM0(_x, "getFinalScore") }, "DECEND"] call BIS_fnc_sortBy;
-			private _bestAction = _allActions deleteAt 0;
-			_plan pushBack _bestAction;
+			_newActions = [_newActions, [], { CALLM0(_x, "getFinalScore") }, "DECEND"] call BIS_fnc_sortBy;
+
+			private _bestAction = _newActions deleteAt 0;
+			private _bestActionScore = CALLM0(_bestAction, "getFinalScore");
+
+			
+			if(_bestActionScore <= 0) exitWith {};
+
+			_activeActions pushBack _bestAction;
 
 			// Apply new action to simstate
-			CALLM1(_bestAction, "applyInstant", _simState);
+			CALLM1(_bestAction, "applyToSim", _simState);
 		};
+
+		// Update actions in real state
+		{ CALLM1(_x, "update", _state) } forEach _activeActions;
+
+		// Remove complete actions
+		_activeActions = _activeActions select { !GETV(_x, "complete") };
+
+		T_SETV("activeActions", _activeActions);
 
 	} ENDMETHOD;
 
