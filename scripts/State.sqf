@@ -18,6 +18,12 @@ CLASS("State", "")
 		T_SETV("outposts", []);
 	} ENDMETHOD;
 
+	METHOD("delete") {
+		params [P_THISOBJECT];
+		T_PRVAR(garrisons);
+		{ DELETE(_x) } forEach _garrisons;
+	} ENDMETHOD;
+
 	METHOD("initFromMarkers") {
 		params [P_THISOBJECT, P_ARRAY("_markers")];
 

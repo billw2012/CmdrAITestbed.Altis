@@ -336,7 +336,6 @@ NAMESPACE setVariable [CLASS_METHOD_NAME_STR(_oop_classNameStr, methodNameStr), 
  */
 
 #define CLASS(classNameStr, baseClassNameStr)	 \
-scopeName "scopeClass"; \
 private _oop_classNameStr = classNameStr; \
 SET_SPECIAL_MEM(_oop_classNameStr, NEXT_ID_STR, 0); \
 private _oop_memList = []; \
@@ -345,7 +344,7 @@ private _oop_parents = []; \
 private _oop_methodList = []; \
 private _oop_newMethodList = []; \
 if (baseClassNameStr != "") then { \
-	if (!([baseClassNameStr, __FILE__, __LINE__] call OOP_assert_class)) then {breakOut "scopeClass";}; \
+	if (!([baseClassNameStr, __FILE__, __LINE__] call OOP_assert_class)) then {throw "invalid base class"}; \
 	_oop_parents = +GET_SPECIAL_MEM(baseClassNameStr, PARENTS_STR); _oop_parents pushBackUnique baseClassNameStr; \
 	_oop_memList = +GET_SPECIAL_MEM(baseClassNameStr, MEM_LIST_STR); \
 	_oop_staticMemList = +GET_SPECIAL_MEM(baseClassNameStr, STATIC_MEM_LIST_STR); \

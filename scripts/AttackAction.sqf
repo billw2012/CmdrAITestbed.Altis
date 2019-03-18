@@ -29,19 +29,37 @@ CLASS("AttackAction", "Action")
 		T_PRVAR(ourGarrId);
 		T_PRVAR(theirGarrId);
 
-		// TODO better score
 		private _ourGarr = CALLM1(_state, "getGarrisonById", _ourGarrId);
 		private _theirGarr = CALLM1(_state, "getGarrisonById", _theirGarrId);
 
-		private _scoreThreat = CALLM0(_theirGarr, "getStrength");
-		private _srcOverComp = CALLM1(_state, "getOverDesiredComp", _srcGarr);
-		private _scoreResource = 0 max (CALLM0(_ourGarr, "getStrength") - _scoreThreat);
+		// Threat is just their strength scaled somewhat
+		// TODO: is scaling here necessary? should we apply a non-linear function?
+		private _scoreThreat = CALLM0(_theirGarr, "getStrength") * 0.1;
+
+		// Resource is how much our garrison is *over* (required composition + required force), scaled by distance (further is lower)
+		private _ourGarrOverComp = CALLM1(_state, "getOverDesiredComp", _ourGarr);
+		// Enemy garrison composition
+		private _theirComp = CALLM1(_theirGarr, "getComp");
+		// How much over (required composition + required force) our garrison is
+		private _ourGarrOverForceComp = [
+			(_ourGarrOverComp select 0) - (_theirComp select 0),
+			(_ourGarrOverComp select 1) - (_theirComp select 1)
+		];
+
+		// TODO: refactor out compositions and strength calculations to a utility class
+		// Base resource score is based on over force
+		private _scoreResource =
+			// units
+			(0 max (_ourGarrOverForceComp select 0)) * UNIT_STRENGTH +
+			// vehicles
+			(0 max (_ourGarrOverForceComp select 1)) * VEHICLE_STRENGTH;
 
 		private _ourGarrPos = CALLM0(_ourGarr, "getPos");
 		private _theirGarrPos = CALLM0(_theirGarr, "getPos");
 
 		private _distCoeff = CALLSM2("ReinforceAction", "calcDistanceFalloff", _ourGarrPos, _theirGarrPos);
 
+		// Scale base score by distance coefficient
 		_scoreResource = _scoreResource * _distCoeff;
 
 		T_SETV("scoreThreat", _scoreThreat);
@@ -55,6 +73,24 @@ CLASS("AttackAction", "Action")
 		private _ourGarr = CALLM1(_state, "getGarrisonById", _ourGarrId);
 		private _theirGarr = CALLM1(_state, "getGarrisonById", _theirGarrId);
 
+		T_PRVAR(stage);
+		
+		private _sentComp = [];
+		// If we didn't start the action yet then we need to subtract from srcGarr
+		if(_stage == "new") then {
+			_sentComp = T_CALLM1("getReinfComp", _state);
+			private _negSentComp = _sentComp apply { _x * -1 };
+			CALLM1(_srcGarr, "modComp", _negSentComp);
+			// Add to tgtGarr
+			CALLM1(_tgtGarr, "modComp", _sentComp);
+		} else {
+			T_PRVAR(splitGarrId);
+
+			private _splitGarr = CALLM1(_state, "getGarrisonById", _splitGarrId);
+			CALLM1(_tgtGarr, "mergeGarrison", _splitGarr);
+			//_sentComp = CALLM0(_splitGarr, "getComp");
+			//T_GETV("sentComp");
+		};
 		while { !CALLM0(_ourGarr, "isDead") and !CALLM0(_theirGarr, "isDead") } do {
 			CALLM1(_ourGarr, "fightUpdate", _theirGarr);
 		};
