@@ -122,8 +122,7 @@ CLASS("Cmdr", "")
 			private _bestAction = _newActions deleteAt 0;
 			private _bestActionScore = CALLM0(_bestAction, "getFinalScore");
 
-			
-			if(_bestActionScore <= 0) exitWith {};
+			if(_bestActionScore <= 0.001) exitWith {};
 
 			_activeActions pushBack _bestAction;
 

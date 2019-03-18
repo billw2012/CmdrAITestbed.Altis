@@ -232,29 +232,34 @@ CLASS("Garrison", "")
 		OOP_INFO_0(_msg);
 		// OOP_INFO_4("Fighting %1 [%2/%3] vs %3 [%4]", _thisObject, _other);
 		private _total = _unitCount + _vehCount + _other_unitCount + _other_vehCount;
+		private _ourPos = T_CALLM0("getPos");
+		private _otherPos = CALLM0(_other, "getPos");
+		private _distCoeff = CALLSM3("Action", "calcDistanceFalloff", _ourPos, _otherPos, 10);
 
 		// Some fake fighting based on relative strengths.
 		for "_i" from 0 to random(_total - 1) do
-		{
-			private _ourStrength = _unitCount * UNIT_STRENGTH + _vehCount * VEHICLE_STRENGTH;
-			private _theirStrength = _other_unitCount * UNIT_STRENGTH + _other_vehCount * VEHICLE_STRENGTH;
-			
-			if(_ourStrength == 0) exitWith { OOP_INFO_1("%1 died", _thisObject) };
-			if(_theirStrength == 0) exitWith { OOP_INFO_1("%1 died", _other) };
+		{	
+			if((random 1) <= _distCoeff) then {
+				private _ourStrength = _unitCount * UNIT_STRENGTH + _vehCount * VEHICLE_STRENGTH;
+				private _theirStrength = _other_unitCount * UNIT_STRENGTH + _other_vehCount * VEHICLE_STRENGTH;
+				
+				if(_ourStrength == 0) exitWith { OOP_INFO_1("%1 died", _thisObject) };
+				if(_theirStrength == 0) exitWith { OOP_INFO_1("%1 died", _other) };
 
-			// Decide the fate of a random unit.
-			// This probably isn't remotely realistic, but at least stronger garrison should usually win.
-			if(random(_ourStrength + _theirStrength) < _ourStrength) then {
-				if((_other_vehCount == 0) or (random(UNIT_STRENGTH + VEHICLE_STRENGTH) < VEHICLE_STRENGTH)) then {
-					_other_unitCount = _other_unitCount - 1;
+				// Decide the fate of a random unit.
+				// This probably isn't remotely realistic, but at least stronger garrison should usually win.
+				if(random(_ourStrength + _theirStrength) < _ourStrength) then {
+					if((_other_vehCount == 0) or (random(UNIT_STRENGTH + VEHICLE_STRENGTH) < VEHICLE_STRENGTH)) then {
+						_other_unitCount = _other_unitCount - 1;
+					} else {
+						_other_vehCount = _other_vehCount - 1;
+					};
 				} else {
-					_other_vehCount = _other_vehCount - 1;
-				};
-			} else {
-				if((_vehCount == 0) or (random(UNIT_STRENGTH + VEHICLE_STRENGTH) < VEHICLE_STRENGTH)) then {
-					_unitCount = _unitCount - 1;
-				} else {
-					_vehCount = _vehCount - 1;
+					if((_vehCount == 0) or (random(UNIT_STRENGTH + VEHICLE_STRENGTH) < VEHICLE_STRENGTH)) then {
+						_unitCount = _unitCount - 1;
+					} else {
+						_vehCount = _vehCount - 1;
+					};
 				};
 			};
 		};

@@ -38,7 +38,7 @@ CLASS("ReinforceAction", "Action")
 			// vehicles
 			(0 max ((_tgtOverComp select 1) * -1)) * VEHICLE_STRENGTH;
 
-		// Resource is how much src is *over* composition.
+		// Resource is how much src is *over* composition, scaled by distance (further is lower)
 		// i.e. How much units/vehicles src can spare.
 		private _srcOverComp = CALLM1(_state, "getOverDesiredComp", _srcGarr);
 		private _scoreResource =
@@ -46,6 +46,12 @@ CLASS("ReinforceAction", "Action")
 			(0 max (_srcOverComp select 0)) * UNIT_STRENGTH +
 			// vehicles
 			(0 max (_srcOverComp select 1)) * VEHICLE_STRENGTH;
+		private _srcGarrPos = CALLM0(_srcGarr, "getPos");
+		private _tgtGarrPos = CALLM0(_tgtGarr, "getPos");
+
+		private _distCoeff = CALLSM2("ReinforceAction", "calcDistanceFalloff", _srcGarrPos, _tgtGarrPos);
+
+		_scoreResource = _scoreResource * _distCoeff;
 
 		T_SETV("scoreThreat", _scoreThreat);
 		T_SETV("scoreResource", _scoreResource);
@@ -90,7 +96,6 @@ CLASS("ReinforceAction", "Action")
 
 		// How much resources tgt needs
 		private _tgtUnderComp = CALLM1(_state, "getOverDesiredComp", _tgtGarr) apply { 0 max (_x * -1) };
-
 		// How much resources src can spare.
 		private _srcOverComp = CALLM1(_state, "getOverDesiredComp", _srcGarr) apply { 0 max _x };
 
