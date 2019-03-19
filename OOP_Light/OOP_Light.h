@@ -152,10 +152,17 @@ nameStr profilerSetCounter _oop_cnt; };
 // ----------------------------------------------------------------------
 
 #define FORCE_SET_MEM(objNameStr, memNameStr, value) NAMESPACE setVariable [OBJECT_MEM_NAME_STR(objNameStr, memNameStr), value]
-#define FORCE_SET_MEM_REF(objNameStr, memNameStr, value) NAMESPACE setVariable [OBJECT_MEM_NAME_STR(objNameStr, memNameStr), value]
+#define FORCE_SET_MEM_REF(objNameStr, memNameStr, value) \
+	isNil { \
+		private _oldVal = NAMESPACE getVariable OBJECT_MEM_NAME_STR(objNameStr, memNameStr); \
+		if (_oldVal isEqualType "") then { CALLM0(_oldVal, "unref") }; \
+		if ((value) isEqualType "") then { CALLM0((value), "ref") }; \
+		NAMESPACE setVariable [OBJECT_MEM_NAME_STR(objNameStr, memNameStr), value] \
+	}
+
 #define FORCE_SET_STATIC_MEM(classNameStr, memNameStr, value) missionNamespace setVariable [CLASS_STATIC_MEM_NAME_STR(classNameStr, memNameStr), value]
 #define FORCE_SET_METHOD(classNameStr, methodNameStr, code) missionNamespace setVariable [CLASS_METHOD_NAME_STR(classNameStr, methodNameStr), code]
-#define FORCE_GET_MEM(objNameStr, memNameStr) ( (NAMESPACE getVariable OBJECT_MEM_NAME_STR(objNameStr, memNameStr)) select 0 )
+#define FORCE_GET_MEM(objNameStr, memNameStr) (NAMESPACE getVariable OBJECT_MEM_NAME_STR(objNameStr, memNameStr))
 #define FORCE_GET_STATIC_MEM(classNameStr, memNameStr) ( NAMESPACE getVariable CLASS_STATIC_MEM_NAME_STR(classNameStr, memNameStr) )
 #define FORCE_GET_METHOD(classNameStr, methodNameStr) ( NAMESPACE getVariable CLASS_METHOD_NAME_STR(classNameStr, methodNameStr) )
 #define FORCE_PUBLIC_MEM(objNameStr, memNameStr) publicVariable OBJECT_MEM_NAME_STR(objNameStr, memNameStr)

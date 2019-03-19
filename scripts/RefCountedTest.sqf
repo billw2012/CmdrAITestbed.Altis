@@ -21,9 +21,9 @@ CLASS("RefCountedTest", "RefCounted")
 ENDCLASS;
 
 testObj1 = NEW("RefCountedTest", []);
-CALLM0(testObj1, "unref");
+//CALLM0(testObj1, "unref");
 
-testObj2 = NEW("RefCountedTest", []);
-CALLM0(testObj2, "ref");
-CALLM0(testObj2, "unref");
-CALLM0(testObj2, "unref");
+// testObj2 = NEW("RefCountedTest", []);
+// CALLM0(testObj2, "ref");
+// CALLM0(testObj2, "unref");
+// CALLM0(testObj2, "unref");

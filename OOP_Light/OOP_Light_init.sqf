@@ -147,10 +147,20 @@ OOP_assert_member = {
 	//Get member list of this class
 	private _memList = GET_SPECIAL_MEM(_classNameStr, MEM_LIST_STR);
 	//Check member
-	private _valid = (_memList findIf { (_x select 0) == _memNameStr }) != -1;
+	private _memIdx = _memList findIf { (_x select 0) == _memNameStr };
+	private _valid = _memIdx != -1;
 	if(!_valid) then {
 		[_file, _line, _classNameStr, _memNameStr] call OOP_error_memberNotFound;
 		DUMP_CALLSTACK;
+	} else {
+		// Check the member doesn't have the ref counted attribute (if it does we should
+		// be using the REF macros with it)
+		private _attr = (_memList select _memIdx) select 1;
+		if (ATTR_REFCOUNTED in _attr) then {
+			private _errorText = format ["class '%1' member '%2' is a ref but is NOT being treated like one!", _classNameStr, _memNameStr];
+			[_file, _line, _errorText] call OOP_error;
+		};
+		// _valid will still be true as we can still write to the variable
 	};
 	//Return value
 	_valid
@@ -178,11 +188,14 @@ OOP_assert_member_ref = {
 		[_file, _line, _classNameStr, _memNameStr] call OOP_error_memberNotFound;
 		DUMP_CALLSTACK;
 	} else {
+		// Check the member has the ref counted attribute (if it doesn't we shouldn't
+		// be using the REF macros with it)
 		private _attr = (_memList select _memIdx) select 1;
 		if !(ATTR_REFCOUNTED in _attr) then {
 			private _errorText = format ["class '%1' member '%2' is not a ref but is being treated like one!", _classNameStr, _memNameStr];
 			[_file, _line, _errorText] call OOP_error;
 		};
+		// _valid will still be true as we can still write to the variable
 	};
 	//Return value
 	_valid
@@ -254,6 +267,10 @@ OOP_callStaticMethodFromRemote = {
 	CALL_STATIC_METHOD(_classNameStr, _methodNameStr, _args);
 };
 
+fn_test = { 
+	true 
+};
+
 OOP_new = {
 	params ["_classNameStr", "_extraParams"];
 
@@ -269,17 +286,29 @@ OOP_new = {
 	};
 	
 	private _objNameStr = OBJECT_NAME_STR(_classNameStr, _oop_nextID);
+
 	FORCE_SET_MEM(_objNameStr, OOP_PARENT_STR, _classNameStr);
 	private _oop_parents = GET_SPECIAL_MEM(_classNameStr, PARENTS_STR);
 	private _oop_i = 0;
 	private _oop_parentCount = count _oop_parents;
 
 	while { _oop_i < _oop_parentCount } do {
-		([_objNameStr] + _extraParams) call GET_METHOD((_oop_parents select _oop_i), "new");
+		//([_objNameStr] + _extraParams) call GET_METHOD((_oop_parents select _oop_i), "new");
+		([_objNameStr] + _extraParams) call FORCE_GET_METHOD((_oop_parents select _oop_i), "new");
 		_oop_i = _oop_i + 1;
 	};
+	private _args = ([_objNameStr] + _extraParams);
+	private _oopp = missionNameSpace getVariable ((_objNameStr) + "_" + "oop_parent");
+	private _assargs = [((_oopp)), "new", __FILE__, __LINE__];
+	diag_log format ["_args = %1, _oopp = %2", _args, _oopp];
 
-	CALL_METHOD(_objNameStr, "new", _extraParams);
+	(_args call ( 
+		if([] call fn_test) then {
+			( missionNameSpace getVariable ((((missionNameSpace getVariable ((_objNameStr) + "_" + "oop_parent")))) + "_fnc_" + ("new")) )
+		} else {
+			nil
+		} ));
+	//CALL_METHOD(_objNameStr, "new", _extraParams);
 	_objNameStr
 };
 

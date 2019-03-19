@@ -12,7 +12,9 @@ CLASS("RefCounted", "")
 
 	METHOD("new") {
 		params [P_THISOBJECT];
-		T_SETV("refCount", 1);
+		// Start at ref count zero. When the object gets assigned to a VARIABLE
+		// using T_SETV_REF it will be automatically reffed.
+		T_SETV("refCount", 0);
 	} ENDMETHOD;
 
 	METHOD("ref") {
