@@ -11,19 +11,54 @@ call compile preprocessFileLineNumbers "scripts\RefCounted.sqf";
 CLASS("RefCountedTest", "RefCounted")
 	METHOD("new") {
 		params [P_THISOBJECT];
-		OOP_INFO_0("RefCountedTest created");
+		OOP_INFO_1("%1 created", _thisObject);
 	} ENDMETHOD;
 
 	METHOD("delete") {
 		params [P_THISOBJECT];
-		OOP_INFO_0("RefCountedTest deleted");
+		OOP_INFO_1("%1 deleted", _thisObject);
 	} ENDMETHOD;
 ENDCLASS;
 
-testObj1 = NEW("RefCountedTest", []);
-//CALLM0(testObj1, "unref");
+CLASS("RefPtrContainer", "")
+	VARIABLE_ATTR("refPtr", [ATTR_REFCOUNTED]);
 
-// testObj2 = NEW("RefCountedTest", []);
-// CALLM0(testObj2, "ref");
-// CALLM0(testObj2, "unref");
-// CALLM0(testObj2, "unref");
+	METHOD("new") {
+		params [P_THISOBJECT, P_STRING("_refPtrIn")];
+		T_SETV_REF("refPtr", _refPtrIn);
+		OOP_INFO_1("%1 created", _thisObject);
+	} ENDMETHOD;
+
+	METHOD("delete") {
+		params [P_THISOBJECT];
+		OOP_INFO_1("%1 deleted", _thisObject);
+	} ENDMETHOD;
+ENDCLASS;
+
+OOP_INFO_0("Test single ref unref ==============================================");
+// Test single ref unref
+isNil {
+	private _testObj1 = NEW("RefCountedTest", []);
+	CALLM0(_testObj1, "ref");
+	CALLM0(_testObj1, "unref");
+};
+
+OOP_INFO_0("Test multiple ref unref ============================================");
+// Test multiple ref unref
+isNil {
+	private _testObj = NEW("RefCountedTest", []);
+	CALLM0(_testObj, "ref");
+	CALLM0(_testObj, "ref");
+	CALLM0(_testObj, "unref");
+	CALLM0(_testObj, "unref");
+};
+
+OOP_INFO_0("Test ref members ===================================================");
+// Test ref members
+isNil {
+	private _testObj = NEW("RefCountedTest", []);
+	private _objArray = [1, 2, 3] apply { NEW("RefPtrContainer", [_testObj]) };
+	{
+		DELETE(_x);
+	} forEach _objArray;
+};

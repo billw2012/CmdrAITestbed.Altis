@@ -154,7 +154,7 @@ nameStr profilerSetCounter _oop_cnt; };
 #define FORCE_SET_MEM(objNameStr, memNameStr, value) NAMESPACE setVariable [OBJECT_MEM_NAME_STR(objNameStr, memNameStr), value]
 #define FORCE_SET_MEM_REF(objNameStr, memNameStr, value) \
 	isNil { \
-		private _oldVal = NAMESPACE getVariable OBJECT_MEM_NAME_STR(objNameStr, memNameStr); \
+		private _oldVal = NAMESPACE getVariable [OBJECT_MEM_NAME_STR(objNameStr, memNameStr), objNull]; \
 		if (_oldVal isEqualType "") then { CALLM0(_oldVal, "unref") }; \
 		if ((value) isEqualType "") then { CALLM0((value), "ref") }; \
 		NAMESPACE setVariable [OBJECT_MEM_NAME_STR(objNameStr, memNameStr), value] \

@@ -28,7 +28,7 @@
                 "fileLocation": ["absolute"],//, "${workspaceFolder}"],
                 "pattern": [
                     {
-                        "regexp": "^\\[(RNT|WRN|ERR)\\]\\[L(.+)\\|C(.+)\\|(.*?)\\]  (.*)$",
+                        "regexp": "^\\[(RNT|WRN|ERR)\\]\\[L?(.+)\\|C(.+)\\|(.*?)\\](.*)$",
                         "line": 2,
                         "column": 3,
                         "severity": 1,
@@ -58,10 +58,10 @@
             "problemMatcher":
             {
                 "owner": "sqf",
-                "fileLocation": ["absolute"],
+                "fileLocation": ["relative", "${workspaceRoot}"],
                 "pattern": [
                     {
-                        "regexp": "^\\[(RNT|WRN|ERR)\\]\\[L(.+)\\|C(.+)\\|(.*?)\\]  (.*)$",
+                        "regexp": "^\\[(RNT|WRN|ERR)\\]\\[L?(.+)\\|C(.+)\\|(.*?)\\](.*)$",
                         "line": 2,
                         "column": 3,
                         "severity": 1,
@@ -93,7 +93,7 @@
                 "fileLocation": ["absolute"],
                 "pattern": [
                     {
-                        "regexp": "^\\[(RNT|WRN|ERR)\\]\\[L(.+)\\|C(.+)\\|(.*?)\\]  (.*)$",
+                        "regexp": "^\\[(RNT|WRN|ERR)\\]\\[L?(.+)\\|C(.+)\\|(.*?)\\](.*)$",
                         "line": 2,
                         "column": 3,
                         "severity": 1,
@@ -106,15 +106,15 @@
         {
             "label": "Pretty print with SQF-VM (not working)",
             "type": "process",
-            "command": "sqfvm.exe",
+            "command": "tools/SQF-VM/sqfvm.exe",
             "args": [
                 "-a",
-                "--load", "./../..",
+                "--load", ".",
                 "--pretty-print", "${file}" 
                 //"--pretty-print", "./../../${relativeFile}" 
             ],
             "options": {
-                "cwd": "${workspaceRoot}/tools/SQF-VM"
+                "cwd": "${workspaceRoot}"
             },
             "group": "build",
             "presentation": {
@@ -123,10 +123,10 @@
             "problemMatcher":
             {
                 "owner": "sqf",
-                "fileLocation": ["absolute"],
+                "fileLocation": ["relative", "${workspaceRoot}"],
                 "pattern": [
                     {
-                        "regexp": "^\\[(RNT|WRN|ERR)\\]\\[L(.+)\\|C(.+)\\|(.*?)\\]  (.*)$",
+                        "regexp": "^\\[(RNT|WRN|ERR)\\]\\[L?(.+)\\|C(.+)\\|(.*?)\\](.*)$",
                         "line": 2,
                         "column": 3,
                         "severity": 1,
@@ -154,7 +154,7 @@
         //         "fileLocation": ["absolute"],
         //         "pattern": [
         //             {
-        //                 "regexp": "^\\[(RNT|WRN|ERR)\\]\\[L(.*)\\|C(.*)\\]  (.*)$",
+        //                 "regexp": "^\\[(RNT|WRN|ERR)\\]\\[L(.*)\\|C(.*)\\](.*)$",
         //                 "line": 2,
         //                 "column": 3,
         //                 "severity": 1,

@@ -293,22 +293,24 @@ OOP_new = {
 	private _oop_parentCount = count _oop_parents;
 
 	while { _oop_i < _oop_parentCount } do {
-		//([_objNameStr] + _extraParams) call GET_METHOD((_oop_parents select _oop_i), "new");
-		([_objNameStr] + _extraParams) call FORCE_GET_METHOD((_oop_parents select _oop_i), "new");
+		([_objNameStr] + _extraParams) call GET_METHOD((_oop_parents select _oop_i), "new");
+		//([_objNameStr] + _extraParams) call FORCE_GET_METHOD((_oop_parents select _oop_i), "new");
 		_oop_i = _oop_i + 1;
 	};
-	private _args = ([_objNameStr] + _extraParams);
-	private _oopp = missionNameSpace getVariable ((_objNameStr) + "_" + "oop_parent");
-	private _assargs = [((_oopp)), "new", __FILE__, __LINE__];
-	diag_log format ["_args = %1, _oopp = %2", _args, _oopp];
+	CALL_METHOD(_objNameStr, "new", _extraParams);
 
-	(_args call ( 
-		if([] call fn_test) then {
-			( missionNameSpace getVariable ((((missionNameSpace getVariable ((_objNameStr) + "_" + "oop_parent")))) + "_fnc_" + ("new")) )
-		} else {
-			nil
-		} ));
-	//CALL_METHOD(_objNameStr, "new", _extraParams);
+	// private _args = ([_objNameStr] + _extraParams);
+	// private _oopp = missionNameSpace getVariable ((_objNameStr) + "_" + "oop_parent");
+	// private _assargs = [((_oopp)), "new", __FILE__, __LINE__];
+	// diag_log format ["_args = %1, _oopp = %2", _args, _oopp];
+
+	// (_args call ( 
+	// 	if([] call fn_test) then {
+	// 		( missionNameSpace getVariable ((((missionNameSpace getVariable ((_objNameStr) + "_" + "oop_parent")))) + "_fnc_" + ("new")) )
+	// 	} else {
+	// 		nil
+	// 	} ));
+	// //CALL_METHOD(_objNameStr, "new", _extraParams);
 	_objNameStr
 };
 
