@@ -8,7 +8,7 @@
 #include "Constants.h"
 
 // Collection of unitCount/vehCount and their orders
-CLASS("Garrison", "")
+CLASS("Garrison", "RefCounted")
 	VARIABLE("marker");
 	VARIABLE("unitCount");
 	VARIABLE("vehCount");
@@ -19,6 +19,18 @@ CLASS("Garrison", "")
 	VARIABLE("garrSide");
 
 	METHOD("new") {
+		params [P_THISOBJECT];
+		T_SETV("marker", objNull);
+		T_SETV("unitCount", 0);
+		T_SETV("vehCount", 0);
+		T_SETV("order", objNull);
+		T_SETV("currAction", objNull);
+		T_SETV("inCombat", false);
+		T_SETV("pos", []);
+		T_SETV("garrSide", side_none);
+	} ENDMETHOD;
+
+	METHOD("delete") {
 		params [P_THISOBJECT];
 		T_SETV("marker", objNull);
 		T_SETV("unitCount", 0);

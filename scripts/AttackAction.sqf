@@ -47,7 +47,7 @@ CLASS("AttackAction", "Action")
 		];
 
 		// TODO: refactor out compositions and strength calculations to a utility class
-		// Base resource score is based on over force
+		// Base resource score is based on over forcein fa
 		private _scoreResource =
 			// units
 			(0 max (_ourGarrOverForceComp select 0)) * UNIT_STRENGTH +

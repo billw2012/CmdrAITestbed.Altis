@@ -8,7 +8,7 @@
 #include "Constants.h"
 
 // Base class for orders
-CLASS("Order", "")
+CLASS("Order", "RefCounted")
 	VARIABLE("orderName");
 	VARIABLE("complete");
 

@@ -122,7 +122,8 @@ OOP_assert_staticMember = {
 		false;
 	};
 	//Check static member
-	private _valid = _memNameStr in _memList;
+	
+	private _valid = (_memList findIf { (_x select 0) == _memNameStr }) != -1;
 	if(!_valid) then {
 		[_file, _line, _classNameStr, _memNameStr] call OOP_error_memberNotFound;
 		DUMP_CALLSTACK;
@@ -131,7 +132,7 @@ OOP_assert_staticMember = {
 	_valid
 };
 
-//Check member and print error if it's not found
+//Check member and print error if it's not found or is ref
 OOP_assert_member = {
 	params["_objNameStr", "_memNameStr", "_file", "_line"];
 	//Get object's class
@@ -146,10 +147,42 @@ OOP_assert_member = {
 	//Get member list of this class
 	private _memList = GET_SPECIAL_MEM(_classNameStr, MEM_LIST_STR);
 	//Check member
-	private _valid = _memNameStr in _memList;
+	private _valid = (_memList findIf { (_x select 0) == _memNameStr }) != -1;
 	if(!_valid) then {
 		[_file, _line, _classNameStr, _memNameStr] call OOP_error_memberNotFound;
 		DUMP_CALLSTACK;
+	};
+	//Return value
+	_valid
+};
+
+//Check member ref and print error if it's not found or not a ref
+OOP_assert_member_ref = {
+	params["_objNameStr", "_memNameStr", "_file", "_line"];
+
+	//Get object's class
+	private _classNameStr = OBJECT_PARENT_CLASS_STR(_objNameStr);
+	//Check if it's an object
+	if(isNil "_classNameStr") exitWith {
+		private _errorText = format ["class name is nil. Attempt to access member: %1", _memNameStr];
+		[_file, _line, _errorText] call OOP_error;
+		DUMP_CALLSTACK;
+		false;
+	};
+	//Get member list of this class
+	private _memList = GET_SPECIAL_MEM(_classNameStr, MEM_LIST_STR);
+	//Check member
+	private _memIdx = _memList findIf { (_x select 0) == _memNameStr };
+	private _valid = _memIdx != -1;
+	if(!_valid) then {
+		[_file, _line, _classNameStr, _memNameStr] call OOP_error_memberNotFound;
+		DUMP_CALLSTACK;
+	} else {
+		private _attr = (_memList select _memIdx) select 1;
+		if !(ATTR_REFCOUNTED in _attr) then {
+			private _errorText = format ["class '%1' member '%2' is not a ref but is being treated like one!", _classNameStr, _memNameStr];
+			[_file, _line, _errorText] call OOP_error;
+		};
 	};
 	//Return value
 	_valid
@@ -193,12 +226,13 @@ OOP_dumpAllVariables = {
 	private _memList = GET_SPECIAL_MEM(_classNameStr, MEM_LIST_STR);
 	diag_log format ["DEBUG: Dumping all variables of %1: %2", _thisObject, _memList];
 	{
-		private _varValue = GETV(_thisObject, _x);
+		_x params ["_memName", "_memAttr"];
+		private _varValue = GETV(_thisObject, _memName);
 		if (isNil "_varValue") then {
-			diag_log format ["DEBUG: %1.%2: %3", _thisObject, _x, "<null>"];
+			diag_log format ["DEBUG: %1.%2: %3", _thisObject, _memName, "<null>"];
 		} else {
-			diag_log format ["DEBUG: %1.%2: %3", _thisObject, _x, _varValue];
-		}
+			diag_log format ["DEBUG: %1.%2: %3", _thisObject, _memName, _varValue];
+		};
 	} forEach _memList;
 };
 
@@ -218,4 +252,107 @@ OOP_callFromRemote = {
 OOP_callStaticMethodFromRemote = {
 	params [["_classNameStr", "", [""]], ["_methodNameStr", "", [""]], ["_args", [], [[]]]];
 	CALL_STATIC_METHOD(_classNameStr, _methodNameStr, _args);
+};
+
+OOP_new = {
+	params ["_classNameStr", "_extraParams"];
+
+	CONSTRUCTOR_ASSERT_CLASS(_classNameStr);
+
+	private _oop_nextID = -1;
+	_oop_nul = isNil {
+		_oop_nextID = GET_SPECIAL_MEM(_classNameStr, NEXT_ID_STR);
+		if (isNil "_oop_nextID") then { 
+			SET_SPECIAL_MEM(_classNameStr, NEXT_ID_STR, 0);	_oop_nextID = 0;
+		};
+		SET_SPECIAL_MEM(_classNameStr, NEXT_ID_STR, _oop_nextID+1);
+	};
+	
+	private _objNameStr = OBJECT_NAME_STR(_classNameStr, _oop_nextID);
+	FORCE_SET_MEM(_objNameStr, OOP_PARENT_STR, _classNameStr);
+	private _oop_parents = GET_SPECIAL_MEM(_classNameStr, PARENTS_STR);
+	private _oop_i = 0;
+	private _oop_parentCount = count _oop_parents;
+
+	while { _oop_i < _oop_parentCount } do {
+		([_objNameStr] + _extraParams) call GET_METHOD((_oop_parents select _oop_i), "new");
+		_oop_i = _oop_i + 1;
+	};
+
+	CALL_METHOD(_objNameStr, "new", _extraParams);
+	_objNameStr
+};
+
+OOP_new_public = {
+	params ["_classNameStr", "_extraParams"];
+
+	CONSTRUCTOR_ASSERT_CLASS(_classNameStr);
+
+	private _oop_nextID = -1;
+	_oop_nul = isNil {
+		_oop_nextID = GET_SPECIAL_MEM(_classNameStr, NEXT_ID_STR);
+		if (isNil "_oop_nextID") then { 
+			SET_SPECIAL_MEM(_classNameStr, NEXT_ID_STR, 0); _oop_nextID = 0;
+		};
+		SET_SPECIAL_MEM(_classNameStr, NEXT_ID_STR, _oop_nextID+1);
+	};
+	private _objNameStr = OBJECT_NAME_STR(_classNameStr, _oop_nextID);
+	FORCE_SET_MEM(_objNameStr, OOP_PARENT_STR, _classNameStr);
+	PUBLIC_VAR(_objNameStr, OOP_PARENT_STR);
+	FORCE_SET_MEM(_objNameStr, OOP_PUBLIC_STR, 1);
+	PUBLIC_VAR(_objNameStr, OOP_PUBLIC_STR);
+	private _oop_parents = GET_SPECIAL_MEM(_classNameStr, PARENTS_STR);
+	private _oop_i = 0;
+	private _oop_parentCount = count _oop_parents;
+	while {_oop_i < _oop_parentCount} do {
+		([_objNameStr] + _extraParams) call GET_METHOD((_oop_parents select _oop_i), "new");
+		_oop_i = _oop_i + 1;
+	};
+	CALL_METHOD(_objNameStr, "new", _extraParams);
+	_objNameStr
+};
+
+OOP_delete = {
+	params ["_objNameStr"];
+
+	DESTRUCTOR_ASSERT_OBJECT(_objNameStr);
+
+	private _oop_classNameStr = OBJECT_PARENT_CLASS_STR(_objNameStr);
+	private _oop_parents = GET_SPECIAL_MEM(_oop_classNameStr, PARENTS_STR);
+	private _oop_parentCount = count _oop_parents;
+	private _oop_i = _oop_parentCount - 1;
+
+	CALL_METHOD(_objNameStr, "delete", []);
+	while {_oop_i > -1} do {
+		[_objNameStr] call GET_METHOD((_oop_parents select _oop_i), "delete");
+		_oop_i = _oop_i - 1;
+	};
+
+	private _isPublic = IS_PUBLIC(_objNameStr);
+	private _oop_memList = GET_SPECIAL_MEM(_oop_classNameStr, MEM_LIST_STR);
+
+	if (_isPublic) then {
+		{
+			_x params ["_memName", "_memAttr"];
+			if(ATTR_REFCOUNTED in _memAttr) then {
+				private _memObj = FORCE_GET_MEM(_objNameStr, _memName);
+				if(_memObj isEqualType "") then {
+					CALLM0(_memObj, "unref");
+				};
+			};
+			FORCE_SET_MEM(_objNameStr, _memName, nil);
+			PUBLIC_VAR(_objNameStr, OOP_PARENT_STR);
+		} forEach _oop_memList;
+	} else {
+		{
+			_x params ["_memName", "_memAttr"];
+			if(ATTR_REFCOUNTED in _memAttr) then {
+				private _memObj = FORCE_GET_MEM(_objNameStr, _memName);
+				if(_memObj isEqualType "") then {
+					CALLM0(_memObj, "unref");
+				};
+			};
+			FORCE_SET_MEM(_objNameStr, _memName, nil);
+		} forEach _oop_memList;
+	};
 };
