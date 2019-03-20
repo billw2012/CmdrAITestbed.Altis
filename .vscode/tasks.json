@@ -135,6 +135,35 @@
                     }
                 ]
             }
+        },
+        {
+            "label": "Parse ALL with SQF-VM",
+            "type": "process",
+            "command": "${workspaceRoot}/tools/sqf-vm-compile-all.bat",
+            "args": [],
+            "options": {
+                "cwd": "${workspaceRoot}/tools"
+            },
+            "group": "build",
+            "presentation": {
+                // Reveal the output only if unrecognized errors occur.
+                "reveal": "always"
+            },
+            "problemMatcher":
+            {
+                "owner": "sqf",
+                "fileLocation": ["relative", "${workspaceRoot}"],
+                "pattern": [
+                    {
+                        "regexp": "^\\[(RNT|WRN|ERR)\\]\\[L?(.+)\\|C(.+)\\|(.*?)\\](.*)$",
+                        "line": 2,
+                        "column": 3,
+                        "severity": 1,
+                        "file": 4,
+                        "message": 5
+                    }
+                ]
+            }
         }
         // {
         //     "label": "Run in SQF-VM",
