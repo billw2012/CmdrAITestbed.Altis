@@ -28,6 +28,21 @@ call compile preprocessFileLineNumbers "Scripts\Cmdr.sqf";
 
 OOP_INFO_0("Initializing state...");
 State = NEW("State", []);
+
+testing = true;
+if (testing) then {
+	private _newMarker = createMarker ["us", [0, 0, 0]];
+	OOP_INFO_1("_newMarker %1", _newMarker);
+	_newMarker setMarkerType type_outpost;
+	_newMarker setMarkerShape "ICON";
+	_newMarker setMarkerColor side_opf;
+	_newMarker setMarkerText "10/4";
+	private _newMarker2 = createMarker ["them", [2000, 0, 0]];
+	_newMarker2 setMarkerType type_outpost;
+	_newMarker2 setMarkerShape "ICON";
+	_newMarker2 setMarkerColor side_guer;
+	_newMarker2 setMarkerText "4/2";
+};
 CALLM1(State, "initFromMarkers", allMapMarkers);
 
 OpforCommander = NEW("Cmdr", [side_opf]);
@@ -36,14 +51,16 @@ OpforCommander = NEW("Cmdr", [side_opf]);
 
 OOP_INFO_0("Spawning AI thread...");
 [] spawn {
+	OOP_INFO_0("In AI thread...");
 	private _itr = 0;
 	while {true} do {
 		if(_itr == PLAN_INTERVAL) then {
+			OOP_INFO_0("Planning...");
 			// Update commander AIs
 			CALLM1(OpforCommander, "update", State);
 			_itr = 0;
 		};
-
+		OOP_INFO_0("Updating state...");
 		CALLM0(State, "update");
 
 		sleep 0.1;

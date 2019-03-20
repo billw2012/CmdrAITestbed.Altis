@@ -21,7 +21,7 @@ CLASS("State", "")
 	METHOD("delete") {
 		params [P_THISOBJECT];
 		T_PRVAR(garrisons);
-		{ DELETE(_x) } forEach _garrisons;
+		{ UNREF(_x) } forEach _garrisons;
 	} ENDMETHOD;
 
 	METHOD("initFromMarkers") {
@@ -30,6 +30,7 @@ CLASS("State", "")
 		// find all intesting markers
 		private _garrisons = (_markers select { markerType _x == type_garrison }) apply { 
 			private _newGarrison = NEW("Garrison", []);
+			REF(_newGarrison);
 			CALLM1(_newGarrison, "initFromMarker", _x);
 			_newGarrison
 		};
@@ -45,6 +46,7 @@ CLASS("State", "")
 			_newGarrMkr setMarkerText (markerText _outpostMkr);
 			_outpostMkr setMarkerText "";
 			private _newGarrison = NEW("Garrison", []);
+			REF(_newGarrison);
 			CALLM1(_newGarrison, "initFromMarker", _newGarrMkr);
 			_newGarrison
 		};
@@ -58,6 +60,7 @@ CLASS("State", "")
 	METHOD("addGarrison") {
 		params [P_THISOBJECT, P_STRING("_newGarr")];
 		T_PRVAR(garrisons);
+		REF(_newGarr);
 		_garrisons pushBack _newGarr
 	} ENDMETHOD;
 	
@@ -80,7 +83,11 @@ CLASS("State", "")
 		T_PRVAR(outposts);
 		
 		private _simState = NEW("State", []);
-		private _simGarrisons = _garrisons apply { CALLM0(_x, "simCopy") };
+		private _simGarrisons = _garrisons apply { 
+			private _copy = CALLM0(_x, "simCopy");
+			REF(_copy);
+			_copy
+		};
 		SETV(_simState, "garrisons", _simGarrisons);
 
 		// TODO: encapsulate outposts? Maybe they don't really have owners, just occupiers

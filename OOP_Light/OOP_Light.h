@@ -477,6 +477,18 @@ objNameStr \
 
 #define DELETE(objNameStr) ([objNameStr] call OOP_delete)
 
+// ---------------------------------------------
+// |         R E F   C O U N T I N G           |
+// ---------------------------------------------
+
+#define REF(objNameStr) CALLM0(objNameStr, "ref")
+#define UNREF(objNameStr) CALLM0(objNameStr, "unref")
+
+// ---------------------------------------------------
+// |         T H R E A D I N G    U T I L S          |
+// ---------------------------------------------------
+
+#define CRITICAL_SECTION private _null = isNil
 
 // ----------------------------------------------------------------------
 // |                   L O G G I N G   M A C R O S                      |

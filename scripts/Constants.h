@@ -5,6 +5,3 @@
 
 #define UNIT_SPEED_MS (5 * 6 * 0.277778)
 #define VEHICLE_SPEED_MS (5 * 60 * 0.277778)
-
-
-#define CRITICAL_SECTION private _null = isNil

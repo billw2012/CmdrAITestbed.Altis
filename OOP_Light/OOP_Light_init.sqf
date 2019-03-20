@@ -267,10 +267,7 @@ OOP_callStaticMethodFromRemote = {
 	CALL_STATIC_METHOD(_classNameStr, _methodNameStr, _args);
 };
 
-fn_test = { 
-	true 
-};
-
+// Create new object from class name and parameters
 OOP_new = {
 	params ["_classNameStr", "_extraParams"];
 
@@ -294,26 +291,13 @@ OOP_new = {
 
 	while { _oop_i < _oop_parentCount } do {
 		([_objNameStr] + _extraParams) call GET_METHOD((_oop_parents select _oop_i), "new");
-		//([_objNameStr] + _extraParams) call FORCE_GET_METHOD((_oop_parents select _oop_i), "new");
 		_oop_i = _oop_i + 1;
 	};
 	CALL_METHOD(_objNameStr, "new", _extraParams);
-
-	// private _args = ([_objNameStr] + _extraParams);
-	// private _oopp = missionNameSpace getVariable ((_objNameStr) + "_" + "oop_parent");
-	// private _assargs = [((_oopp)), "new", __FILE__, __LINE__];
-	// diag_log format ["_args = %1, _oopp = %2", _args, _oopp];
-
-	// (_args call ( 
-	// 	if([] call fn_test) then {
-	// 		( missionNameSpace getVariable ((((missionNameSpace getVariable ((_objNameStr) + "_" + "oop_parent")))) + "_fnc_" + ("new")) )
-	// 	} else {
-	// 		nil
-	// 	} ));
-	// //CALL_METHOD(_objNameStr, "new", _extraParams);
 	_objNameStr
 };
 
+// Create new public object from class name and parameters
 OOP_new_public = {
 	params ["_classNameStr", "_extraParams"];
 
@@ -343,6 +327,27 @@ OOP_new_public = {
 	_objNameStr
 };
 
+OOP_deref_var = {
+	params ["_objNameStr", "_memName", "_memAttr"];
+	if(ATTR_REFCOUNTED in _memAttr) then {
+		private _memObj = FORCE_GET_MEM(_objNameStr, _memName);
+		switch(typeName _memObj) do {
+			case "STRING": {
+				CALLM0(_memObj, "unref");
+			};
+			// Lets not use this, it is a bit ambiguous as automatic ref counting in arrays can only
+			// ever be partial, unless we make a whole suite of functions to replace all normal array 
+			// mutation functions with ref safe ones. That isn't unthinkable, but not done as of yet.
+			// case "ARRAY": {
+			// 	{
+			// 		CALLM0(_x, "unref");
+			// 	} forEach _memObj;
+			// };
+		};
+	};
+};
+
+// Delete object
 OOP_delete = {
 	params ["_objNameStr"];
 
@@ -361,29 +366,65 @@ OOP_delete = {
 
 	private _isPublic = IS_PUBLIC(_objNameStr);
 	private _oop_memList = GET_SPECIAL_MEM(_oop_classNameStr, MEM_LIST_STR);
-
+	
 	if (_isPublic) then {
 		{
+			// If the var is REFCOUNTED then unref it
 			_x params ["_memName", "_memAttr"];
-			if(ATTR_REFCOUNTED in _memAttr) then {
-				private _memObj = FORCE_GET_MEM(_objNameStr, _memName);
-				if(_memObj isEqualType "") then {
-					CALLM0(_memObj, "unref");
-				};
-			};
+			[_objNameStr, _memName, _memAttr] call OOP_deref_var;
 			FORCE_SET_MEM(_objNameStr, _memName, nil);
 			PUBLIC_VAR(_objNameStr, OOP_PARENT_STR);
 		} forEach _oop_memList;
 	} else {
 		{
+			// If the var is REFCOUNTED then unref it
 			_x params ["_memName", "_memAttr"];
-			if(ATTR_REFCOUNTED in _memAttr) then {
-				private _memObj = FORCE_GET_MEM(_objNameStr, _memName);
-				if(_memObj isEqualType "") then {
-					CALLM0(_memObj, "unref");
-				};
-			};
+			[_objNameStr, _memName, _memAttr] call OOP_deref_var;
 			FORCE_SET_MEM(_objNameStr, _memName, nil);
 		} forEach _oop_memList;
 	};
 };
+
+// Base class for intrusive ref counting.
+// Use the REF and UNREF macros with objects of classes 
+// derived from this one.
+// Use variable attributes to enable automated ref counting for object refs:
+// VARIABLE_ATTR(..., [ATTR_REFCOUNTED]);
+// Use the SET_VAR_REF, SETV_REF, T_SETV_REF family of functions to write to 
+// these members to get automated de-refing of replaced value, and refing of
+// new value. See RefCountedTest.sqf for example.
+CLASS("RefCounted", "")
+	VARIABLE("refCount");
+
+	METHOD("new") {
+		params [P_THISOBJECT];
+		// Start at ref count zero. When the object gets assigned to a VARIABLE
+		// using T_SETV_REF it will be automatically reffed.
+		T_SETV("refCount", 0);
+	} ENDMETHOD;
+
+	METHOD("ref") {
+		params [P_THISOBJECT];
+		CRITICAL_SECTION {
+			T_PRVAR(refCount);
+			_refCount = _refCount + 1;
+			OOP_DEBUG_2("%1 refed to %2", _thisObject, _refCount);
+			T_SETV("refCount", _refCount);
+		};
+	} ENDMETHOD;
+
+	METHOD("unref") {
+		params [P_THISOBJECT];
+		CRITICAL_SECTION {
+			T_PRVAR(refCount);
+			_refCount = _refCount - 1;
+			OOP_DEBUG_2("%1 unrefed to %2", _thisObject, _refCount);
+			if(_refCount == 0) then {
+				OOP_DEBUG_1("%1 being deleted", _thisObject);
+				DELETE(_thisObject);
+			} else {
+				T_SETV("refCount", _refCount);
+			};
+		};
+	} ENDMETHOD;
+ENDCLASS;

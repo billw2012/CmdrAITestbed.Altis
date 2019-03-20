@@ -124,20 +124,32 @@ CLASS("Cmdr", "")
 
 			if(_bestActionScore <= 0.001) exitWith {};
 
+			REF(_bestAction);
 			_activeActions pushBack _bestAction;
 
 			// Apply new action to simstate
 			CALLM1(_bestAction, "applyToSim", _simState);
 		};
 
+		// Delete any remaining actions
+		{
+			DELETE(_x);
+		} forEach _newActions;
+
 		// Update actions in real state
 		{ CALLM1(_x, "update", _state) } forEach _activeActions;
 
 		// Remove complete actions
-		_activeActions = _activeActions select { !GETV(_x, "complete") };
+		private _completeActions = _activeActions select { GETV(_x, "complete") };
+
+		// Unref completed actions
+		{
+			UNREF(_x);
+		} forEach _completeActions;
+
+		_activeActions = _activeActions - _completeActions;
 
 		T_SETV("activeActions", _activeActions);
-
 	} ENDMETHOD;
 
 ENDCLASS;

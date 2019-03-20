@@ -3,10 +3,9 @@
 #define OOP_WARNING
 #define OOP_ERROR
 
-#include "..\OOP_Light\OOP_Light.h"
+#include "OOP_Light.h"
 
 call compile preprocessFileLineNumbers "OOP_Light\OOP_Light_init.sqf";
-call compile preprocessFileLineNumbers "scripts\RefCounted.sqf";
 
 CLASS("RefCountedTest", "RefCounted")
 	METHOD("new") {
@@ -38,19 +37,19 @@ ENDCLASS;
 OOP_INFO_0("Test single ref unref ==============================================");
 // Test single ref unref
 isNil {
-	private _testObj1 = NEW("RefCountedTest", []);
-	CALLM0(_testObj1, "ref");
-	CALLM0(_testObj1, "unref");
+	private _testObj = NEW("RefCountedTest", []);
+	REF(_testObj);
+	UNREF(_testObj);
 };
 
 OOP_INFO_0("Test multiple ref unref ============================================");
 // Test multiple ref unref
 isNil {
 	private _testObj = NEW("RefCountedTest", []);
-	CALLM0(_testObj, "ref");
-	CALLM0(_testObj, "ref");
-	CALLM0(_testObj, "unref");
-	CALLM0(_testObj, "unref");
+	REF(_testObj);
+	REF(_testObj);
+	UNREF(_testObj);
+	UNREF(_testObj);
 };
 
 OOP_INFO_0("Test ref members ===================================================");

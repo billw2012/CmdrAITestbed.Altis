@@ -39,7 +39,7 @@ CLASS("AttackAction", "Action")
 		// Resource is how much our garrison is *over* (required composition + required force), scaled by distance (further is lower)
 		private _ourGarrOverComp = CALLM1(_state, "getOverDesiredComp", _ourGarr);
 		// Enemy garrison composition
-		private _theirComp = CALLM1(_theirGarr, "getComp");
+		private _theirComp = CALLM0(_theirGarr, "getComp");
 		// How much over (required composition + required force) our garrison is
 		private _ourGarrOverForceComp = [
 			(_ourGarrOverComp select 0) - (_theirComp select 0),

@@ -7,7 +7,7 @@
 
 #include "Constants.h"
 
-CLASS("Action", "")
+CLASS("Action", "RefCounted")
 	VARIABLE("scoreThreat");
 	VARIABLE("scoreResource");
 	VARIABLE("scoreStrategy");

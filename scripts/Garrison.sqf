@@ -12,8 +12,8 @@ CLASS("Garrison", "RefCounted")
 	VARIABLE("marker");
 	VARIABLE("unitCount");
 	VARIABLE("vehCount");
-	VARIABLE("order");
-	VARIABLE("currAction");
+	VARIABLE_ATTR("order", [ATTR_REFCOUNTED]);
+	VARIABLE_ATTR("currAction", [ATTR_REFCOUNTED]);
 	VARIABLE("inCombat");
 	VARIABLE("pos");
 	VARIABLE("garrSide");
@@ -23,24 +23,20 @@ CLASS("Garrison", "RefCounted")
 		T_SETV("marker", objNull);
 		T_SETV("unitCount", 0);
 		T_SETV("vehCount", 0);
-		T_SETV("order", objNull);
-		T_SETV("currAction", objNull);
 		T_SETV("inCombat", false);
 		T_SETV("pos", []);
 		T_SETV("garrSide", side_none);
 	} ENDMETHOD;
 
-	METHOD("delete") {
-		params [P_THISOBJECT];
-		T_SETV("marker", objNull);
-		T_SETV("unitCount", 0);
-		T_SETV("vehCount", 0);
-		T_SETV("order", objNull);
-		T_SETV("currAction", objNull);
-		T_SETV("inCombat", false);
-		T_SETV("pos", []);
-		T_SETV("garrSide", side_none);
-	} ENDMETHOD;
+	// METHOD("delete") {
+	// 	params [P_THISOBJECT];
+	// 	T_SETV("marker", objNull);
+	// 	T_SETV("unitCount", 0);
+	// 	T_SETV("vehCount", 0);
+	// 	T_SETV("inCombat", false);
+	// 	T_SETV("pos", []);
+	// 	T_SETV("garrSide", side_none);
+	// } ENDMETHOD;
 
 	METHOD("initFromMarker") {
 		params [P_THISOBJECT, P_STRING("_marker")];
@@ -55,7 +51,6 @@ CLASS("Garrison", "RefCounted")
 
 		T_SETV("unitCount", _unitCount);
 		T_SETV("vehCount", _vehCount);
-		T_SETV("order", objNull);
 		T_SETV("inCombat", false);
 		T_SETV("pos", markerPos _marker);
 		T_SETV("garrSide", markerColor _marker);
@@ -92,8 +87,8 @@ CLASS("Garrison", "RefCounted")
 
 		SETV(_newGarr, "unitCount", T_GETV("unitCount"));
 		SETV(_newGarr, "vehCount", T_GETV("vehCount"));
-		SETV(_newGarr, "order", T_GETV("order"));
-		SETV(_newGarr, "currAction", T_GETV("currAction"));
+		SETV_REF(_newGarr, "order", T_GETV("order"));
+		SETV_REF(_newGarr, "currAction", T_GETV("currAction"));
 		SETV(_newGarr, "inCombat", T_GETV("inCombat"));
 		SETV(_newGarr, "pos", +T_GETV("pos"));
 		SETV(_newGarr, "garrSide", T_GETV("garrSide"));
@@ -182,11 +177,7 @@ CLASS("Garrison", "RefCounted")
 
 	METHOD("giveOrder") {
 		params [P_THISOBJECT, P_STRING("_newOrder")];
-		T_PRVAR(order);
-		if(_order isEqualType "") then {
-			DELETE(_order);
-		};
-		T_SETV("order", _newOrder);
+		T_SETV_REF("order", _newOrder);
 	} ENDMETHOD;
 
 	METHOD("isOrderComplete") {
