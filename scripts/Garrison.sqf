@@ -23,6 +23,8 @@ CLASS("Garrison", "RefCounted")
 		T_SETV("marker", objNull);
 		T_SETV("unitCount", 0);
 		T_SETV("vehCount", 0);
+		T_SETV_REF("order", objNull);
+		T_SETV_REF("currAction", objNull);
 		T_SETV("inCombat", false);
 		T_SETV("pos", []);
 		T_SETV("garrSide", side_none);

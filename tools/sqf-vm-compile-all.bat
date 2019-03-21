@@ -2,7 +2,7 @@
 cd /d "%~dp0SQF-VM"
 
 FOR /R "%~dp0.." %%G in (*.sqf) DO (
-    echo sqfvm.exe -a --parse-only --load "./../.." -i "%%G"
+    rem echo sqfvm.exe -a --parse-only --load "./../.." -i "%%G"
     sqfvm.exe -a --parse-only --load "./../.." -i "%%G"
 )
 

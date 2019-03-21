@@ -29,7 +29,7 @@ call compile preprocessFileLineNumbers "Scripts\Cmdr.sqf";
 OOP_INFO_0("Initializing state...");
 State = NEW("State", []);
 
-testing = true;
+testing = false;
 if (testing) then {
 	private _newMarker = createMarker ["us", [0, 0, 0]];
 	OOP_INFO_1("_newMarker %1", _newMarker);

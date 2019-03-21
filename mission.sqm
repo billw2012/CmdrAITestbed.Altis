@@ -8,7 +8,7 @@ class EditorData
 	toggles=1;
 	class ItemIDProvider
 	{
-		nextID=11;
+		nextID=19;
 	};
 	class MarkerIDProvider
 	{
@@ -78,7 +78,7 @@ class Mission
 	};
 	class Entities
 	{
-		items=4;
+		items=12;
 		class Item0
 		{
 			dataType="Group";
@@ -140,6 +140,94 @@ class Mission
 			colorName="ColorGUER";
 			id=9;
 			atlOffset=-78.200294;
+		};
+		class Item4
+		{
+			dataType="Marker";
+			position[]={13707.514,-38.351532,16117.972};
+			name="marker_4";
+			text="20/10";
+			type="mil_flag";
+			colorName="ColorEAST";
+			id=11;
+			atlOffset=-57.413101;
+		};
+		class Item5
+		{
+			dataType="Marker";
+			position[]={14510.038,-33.94183,16868.807};
+			name="marker_5";
+			text="20/10";
+			type="mil_flag";
+			colorName="ColorEAST";
+			id=12;
+			atlOffset=-51.313126;
+		};
+		class Item6
+		{
+			dataType="Marker";
+			position[]={14344.438,-34.869923,15426.527};
+			name="marker_6";
+			text="20/10";
+			type="mil_flag";
+			colorName="ColorEAST";
+			id=13;
+			atlOffset=-40.572414;
+		};
+		class Item7
+		{
+			dataType="Marker";
+			position[]={12781.854,67.789063,16711.857};
+			name="marker_7";
+			text="5/2";
+			type="mil_box";
+			colorName="ColorEAST";
+			id=14;
+			atlOffset=-17.86776;
+		};
+		class Item8
+		{
+			dataType="Marker";
+			position[]={12510.098,-6.5149999,14327.845};
+			name="marker_8";
+			text="4/2";
+			type="mil_flag";
+			colorName="ColorEAST";
+			id=15;
+			atlOffset=-18.085867;
+		};
+		class Item9
+		{
+			dataType="Marker";
+			position[]={10480.433,77,14226.04};
+			name="marker_9";
+			text="10/2";
+			type="mil_flag";
+			colorName="ColorGUER";
+			id=16;
+			atlOffset=-0.00026702881;
+		};
+		class Item10
+		{
+			dataType="Marker";
+			position[]={9703.3838,128.17599,15731.951};
+			name="marker_10";
+			text="20/4";
+			type="mil_flag";
+			colorName="ColorGUER";
+			id=17;
+			atlOffset=-16.766998;
+		};
+		class Item11
+		{
+			dataType="Marker";
+			position[]={9580.249,87.594002,16902.742};
+			name="marker_11";
+			text="30/4";
+			type="mil_flag";
+			colorName="ColorGUER";
+			id=18;
+			atlOffset=-0.00026702881;
 		};
 	};
 };
