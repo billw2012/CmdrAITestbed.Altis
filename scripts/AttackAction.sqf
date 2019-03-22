@@ -13,6 +13,7 @@ CLASS("AttackAction", "Action")
 	VARIABLE("ourGarrId");
 	VARIABLE("theirGarrId");
 	VARIABLE("splitGarrId");
+	VARIABLE("targetOutpostId");
 	VARIABLE("stage");
 
 	METHOD("new") {
@@ -34,7 +35,7 @@ CLASS("AttackAction", "Action")
 
 		// Threat is just their strength scaled somewhat
 		// TODO: is scaling here necessary? should we apply a non-linear function?
-		private _scoreThreat = CALLM0(_theirGarr, "getStrength") * 0.1;
+		private _scorePriority = CALLM0(_theirGarr, "getStrength") * 0.1;
 
 		// Resource is how much our garrison is *over* (required composition + required force), scaled by distance (further is lower)
 		private _ourGarrOverComp = CALLM1(_state, "getOverDesiredComp", _ourGarr);
@@ -62,7 +63,7 @@ CLASS("AttackAction", "Action")
 		// Scale base score by distance coefficient
 		_scoreResource = _scoreResource * _distCoeff;
 
-		T_SETV("scoreThreat", _scoreThreat);
+		T_SETV("scorePriority", _scorePriority);
 		T_SETV("scoreResource", _scoreResource);
 	} ENDMETHOD;
 
@@ -103,37 +104,33 @@ CLASS("AttackAction", "Action")
 
 		T_PRVAR(stage);
 		
-		
-		private _splitComp = [];
 		// If we didn't start the action yet then we need to subtract from srcGarr
-		if(_stage == "new") then {
-			_splitComp = T_CALLM1("getAttackComp", _state);
-			//_splitGarr = CALLM1(_ourGarr, "splitGarrison", _splitComp);
-			//_negSentComp = _sentComp apply { _x * -1 };
-			//CALLM1(_srcGarr, "modComp", _negSentComp);
-			// Fight target garr
+		switch(_stage) do {
+			case "new": {
+				private _splitComp = T_CALLM1("getAttackComp", _state);
+				private _negSentComp = _splitComp apply { _x * -1 };
+				// TODO: better simulation!
+				CALLM1(_theirGarr, "modComp", _negSentComp);
+				// while { !CALLM0(_splitGarr, "isDead") and !CALLM0(_theirGarr, "isDead") } do {
+				// 	CALLM1(_splitGarr, "fightUpdate", _theirGarr);
+				// };
+			};
+			case "moving": {
+				T_PRVAR(splitGarrId);
+				private _splitGarr = CALLM1(_state, "getGarrisonById", _splitGarrId);
+				private _splitComp = CALLM0(_splitGarr, "getComp");
+				private _negSentComp = _splitComp apply { _x * -1 };
+				// TODO: better simulation!
+				CALLM1(_theirGarr, "modComp", _negSentComp);
+			};
+			case "take": {
+				private _splitGarr = CALLM1(_state, "getGarrisonById", _splitGarrId);
 
-			//CALLM1(_theirGarr, "modComp", _sentComp);
-		} else {
-			T_PRVAR(splitGarrId);
-			private _splitGarr = CALLM1(_state, "getGarrisonById", _splitGarrId);
-			_splitComp = CALLM0(_splitGarr, "getComp");
-			
-			//CALLM1(_theirGarr, "mergeGarrison", _splitGarr);
-			//_sentComp = CALLM0(_splitGarr, "getComp");
-			//T_GETV("sentComp");
+			};
 		};
-		private _negSentComp = _splitComp apply { _x * -1 };
-
-		// TODO: better simulation!
-		CALLM1(_theirGarr, "modComp", _negSentComp);
-
-		// while { !CALLM0(_splitGarr, "isDead") and !CALLM0(_theirGarr, "isDead") } do {
-		// 	CALLM1(_splitGarr, "fightUpdate", _theirGarr);
-		// };
 
 	} ENDMETHOD;
-	
+
 
 	METHOD("update") {
 		params [P_THISOBJECT, P_STRING("_state")];
@@ -152,12 +149,6 @@ CLASS("AttackAction", "Action")
 
 		// If the enemy are dead then this action is complete.
 		// TODO: use actual intel to determine if/when target is dead.
-
-
-		if(CALLM0(_theirGarr, "isDead")) exitWith {
-			T_SETV("complete", true);
-			OOP_INFO_2("AttackAction %1->%2 completed: %2 died", _ourGarrId, _theirGarrId);
-		};
 
 		T_PRVAR(stage);
 
@@ -189,31 +180,86 @@ CLASS("AttackAction", "Action")
 			case "moving": {
 				private _splitGarr = CALLM1(_state, "getGarrisonById", _splitGarrId);				
 				private _splitPos = CALLM0(_splitGarr, "getPos");
-				OOP_INFO_4("AttackAction %1->%3->%2 pos: %4", _ourGarrId, _theirGarrId, _splitGarrId, _splitPos);
+				if(CALLM0(_splitGarr, "isDead")) exitWith {
+					T_SETV("complete", true);
+					OOP_INFO_3("AttackAction %1->%3->%2 completed: %3 died", _ourGarrId, _theirGarrId, _splitGarrId);
+				};
+
+				if(CALLM0(_theirGarr, "isDead")) then {
+					// If enemy is dead we will move to the nearest non enemy outpost (probably the one we just vacated by killing the enemy).
+					private _ourSide = CALLM0(_splitGarr, "getSide");
+					private _outpostId = CALLM2(_state, "getNearestNonEnemyOutpostId", _ourSide, _splitPos);
+					if(_outpostId == -1) then {
+						T_SETV("targetOutpostId", _outpostId);
+						// Next stage
+						T_SETV("stage", "take");
+						OOP_INFO_3("AttackAction %1->%3->%2 is taking outpost: %2 died", _ourGarrId, _theirGarrId, _splitGarrId);
+						private _outpost = CALLM1(_state, "getOutpostById", _outpostId);
+						private _outpostPos = CALLM0(_outpost, "getPos");
+						// Give move order to the target outpost.
+						private _args = [ format["%1 moving to outpost %2", _splitGarrId, _outpostId], _splitGarrId, _outpostPos];
+						private _moveOrder = NEW("MoveOrder", _args);
+						CALLM1(_splitGarr, "giveOrder", _moveOrder);
+					} else {
+						// No outpost? I guess this is our life now.
+						OOP_INFO_3("AttackAction %1->%3->%2 is done: no outpost to take", _ourGarrId, _theirGarrId, _splitGarrId);
+						T_SETV("complete", true);
+					};
+				} else {
+					if(CALLM0(_splitGarr, "isOrderComplete")) then {
+						OOP_INFO_3("AttackAction %1->%3->%2 move order completed", _ourGarrId, _theirGarrId, _splitGarrId);
+						
+						private _targetPos = CALLM0(_theirGarr, "getPos");
+						private _dist = _splitPos distance _targetPos;
+						OOP_INFO_4("AttackAction %1->%3->%2 dist: %4", _ourGarrId, _theirGarrId, _splitGarrId, _dist);
+						// If we reached the target then merge the garrisons
+						if(_dist < 100) then {
+							OOP_INFO_3("AttackAction %1->%3->%2 merging %3 to target", _ourGarrId, _theirGarrId, _splitGarrId);
+							CALLM1(_theirGarr, "mergeGarrison", _splitGarr);
+							T_SETV("complete", true);
+						} else {
+							OOP_INFO_3("AttackAction %1->%3->%2 moving %3 to target", _ourGarrId, _theirGarrId, _splitGarrId);
+
+							// Give another move order as we didn't reach target yet.
+							private _args = [ format["%1 attacking %2", _splitGarrId, _theirGarrId], _splitGarrId, _targetPos];
+							private _moveOrder = NEW("MoveOrder", _args);
+							CALLM1(_splitGarr, "giveOrder", _moveOrder);
+						};
+					};
+				};
+			};
+
+			case "take": {
+				T_PRVAR(targetOutpostId);
+
+				private _splitGarr = CALLM1(_state, "getGarrisonById", _splitGarrId);				
 				if(CALLM0(_splitGarr, "isDead")) exitWith {
 					T_SETV("complete", true);
 					OOP_INFO_3("AttackAction %1->%3->%2 completed: %3 died", _ourGarrId, _theirGarrId, _splitGarrId);
 				};
 				if(CALLM0(_splitGarr, "isOrderComplete")) then {
-					OOP_INFO_3("AttackAction %1->%3->%2 move order completed", _ourGarrId, _theirGarrId, _splitGarrId);
-					
-					private _targetPos = CALLM0(_theirGarr, "getPos");
-					private _dist = _splitPos distance _targetPos;
-					OOP_INFO_4("AttackAction %1->%3->%2 dist: %4", _ourGarrId, _theirGarrId, _splitGarrId, _dist);
-					// If we reached the target then merge the garrisons
-					if(_dist < 100) then {
-						OOP_INFO_3("AttackAction %1->%3->%2 merging %3 to target", _ourGarrId, _theirGarrId, _splitGarrId);
-						CALLM1(_theirGarr, "mergeGarrison", _splitGarr);
-						T_SETV("complete", true);
-					} else {
-						OOP_INFO_3("AttackAction %1->%3->%2 moving %3 to target", _ourGarrId, _theirGarrId, _splitGarrId);
-
-						// Give another move order as we didn't reach target yet.
-						private _args = [ format["%1 attacking %2", _splitGarrId, _theirGarrId], _splitGarrId, _targetPos];
-						private _moveOrder = NEW("MoveOrder", _args);
-						CALLM1(_splitGarr, "giveOrder", _moveOrder);
+					private _ourSide = CALLM0(_splitGarr, "getSide");
+					private _outpost = CALLM1(_state, "getOutpostById", _targetOutpostId);
+					private _outpostPos = CALLM0(_outpost, "getPos");
+					// Get nearby garrisons who are not doing anything, we will join the closest one
+					private _nearGarrisons = CALLM3(_state, "getNearestGarrisonsById", _ourSide, _outpostPos, 50) 
+						apply { CALLM1(_state, "getGarrisonById", _x) }
+						select { CALLM0(_x, "isOrderComplete") };
+					if (count _nearGarrisons > 0) then {
+						private _nearestGarrison = _nearGarrisons select 0;
+						OOP_INFO_4("AttackAction %1->%3->%2: merged to %4", _ourGarrId, _theirGarrId, _splitGarrId, _nearestGarrison);
+						CALLM1(_nearestGarrison, "mergeGarrison", _splitGarr);
 					};
+
+					T_SETV("complete", true);
+					OOP_INFO_3("AttackAction %1->%3->%2 completed: %3 arrived at outpost", _ourGarrId, _theirGarrId, _splitGarrId);
 				};
+
+				// private _splitPos = CALLM0(_splitGarr, "getPos");
+				// private _outpost = CALLM1(_state, "getOutpostById", _outpostId);
+				// private _outpostPos = CALLM0(_outpost, "getPos");
+
+
 			};
 		};
 

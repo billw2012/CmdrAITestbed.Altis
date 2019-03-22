@@ -97,6 +97,7 @@ CLASS("Cmdr", "")
 
 	METHOD("update") {
 		params [P_THISOBJECT, P_STRING("_state")];
+		private _profileScope = createProfileScope "Cmdr.update";
 
 		T_PRVAR(activeActions);
 

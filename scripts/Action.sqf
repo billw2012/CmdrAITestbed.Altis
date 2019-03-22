@@ -8,15 +8,21 @@
 #include "Constants.h"
 
 CLASS("Action", "RefCounted")
-	VARIABLE("scoreThreat");
+	// The priority of this action in relation to other actions of the same or different type.
+	VARIABLE("scorePriority");
+	// The resourcing available for this action.
 	VARIABLE("scoreResource");
+	// How strongly this action correlates with the current strategy.
 	VARIABLE("scoreStrategy");
+	// How close to being complete this action is (>1)
 	VARIABLE("scoreCompleteness");
+
+	// Whether the action is complete
 	VARIABLE("complete");
 
 	METHOD("new") {
 		params [P_THISOBJECT];
-		T_SETV("scoreThreat", 1);
+		T_SETV("scorePriority", 1);
 		T_SETV("scoreResource", 1);
 		T_SETV("scoreStrategy", 1);
 		T_SETV("scoreCompleteness", 1);
@@ -29,11 +35,13 @@ CLASS("Action", "RefCounted")
 
 	METHOD("getFinalScore") {
 		params [P_THISOBJECT];
-		T_PRVAR(scoreThreat);
+		T_PRVAR(scorePriority);
 		T_PRVAR(scoreResource);
 		T_PRVAR(scoreStrategy);
 		T_PRVAR(scoreCompleteness);
-		_scoreThreat * _scoreResource * _scoreStrategy * _scoreCompleteness
+		// TODO: what is the correct way to combine these scores?
+		// Should we try to get them all from 0 to 1?
+		_scorePriority * _scoreResource * _scoreStrategy * _scoreCompleteness
 	} ENDMETHOD;
 
 	METHOD("applyToSim") {

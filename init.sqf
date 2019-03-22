@@ -19,6 +19,7 @@ type_garrison = "mil_box";
 order_types = [];
 
 call compile preprocessFileLineNumbers "Scripts\Garrison.sqf";
+call compile preprocessFileLineNumbers "Scripts\Outpost.sqf";
 call compile preprocessFileLineNumbers "Scripts\Orders.sqf";
 call compile preprocessFileLineNumbers "Scripts\Action.sqf";
 call compile preprocessFileLineNumbers "Scripts\AttackAction.sqf";
@@ -54,8 +55,10 @@ OOP_INFO_0("Spawning AI thread...");
 	OOP_INFO_0("In AI thread...");
 	private _itr = 0;
 	while {true} do {
+		private _profileScope = createProfileScope "Update";
 		if(_itr == PLAN_INTERVAL) then {
 			OOP_INFO_0("Planning...");
+			private _planning = createProfileScope "Planning";
 			// Update commander AIs
 			CALLM1(OpforCommander, "update", State);
 			_itr = 0;

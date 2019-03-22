@@ -15,7 +15,7 @@ CLASS("ReinforceAction", "Action")
 
 	METHOD("new") {
 		params [P_THISOBJECT, P_NUMBER("_srcGarrId"), P_NUMBER("_tgtGarrId")];
-		OOP_INFO_2("New ReinforceAction created %1->%2", _srcGarrId, _tgtGarrId);
+
 		T_SETV("srcGarrId", _srcGarrId);
 		T_SETV("tgtGarrId", _tgtGarrId);
 		T_SETV("splitGarrId", -1);
@@ -24,19 +24,15 @@ CLASS("ReinforceAction", "Action")
 
 	METHOD("updateScore") {
 		params [P_THISOBJECT, P_STRING("_state")];
+
 		T_PRVAR(srcGarrId);
 		T_PRVAR(tgtGarrId);
+
 		private _srcGarr = CALLM1(_state, "getGarrisonById", _srcGarrId);
 		private _tgtGarr = CALLM1(_state, "getGarrisonById", _tgtGarrId);
 
-		// Threat is how much tgt is *under* composition (so over comp * -1).
-		// i.e. How much units/vehicles tgt needs.
-		private _tgtOverComp = CALLM1(_state, "getOverDesiredComp", _tgtGarr);
-		private _scoreThreat = 
-			// units
-			(0 max ((_tgtOverComp select 0) * -1)) * UNIT_STRENGTH +
-			// vehicles
-			(0 max ((_tgtOverComp select 1) * -1)) * VEHICLE_STRENGTH;
+		// TODO:OPT cache these scores!
+		private _scorePriority = CALLM1(_state, "getReinforceRequiredScore", _tgtGarr);
 
 		// Resource is how much src is *over* composition, scaled by distance (further is lower)
 		// i.e. How much units/vehicles src can spare.
@@ -46,6 +42,7 @@ CLASS("ReinforceAction", "Action")
 			(0 max (_srcOverComp select 0)) * UNIT_STRENGTH +
 			// vehicles
 			(0 max (_srcOverComp select 1)) * VEHICLE_STRENGTH;
+
 		private _srcGarrPos = CALLM0(_srcGarr, "getPos");
 		private _tgtGarrPos = CALLM0(_tgtGarr, "getPos");
 
@@ -53,7 +50,7 @@ CLASS("ReinforceAction", "Action")
 
 		_scoreResource = _scoreResource * _distCoeff;
 
-		T_SETV("scoreThreat", _scoreThreat);
+		T_SETV("scorePriority", _scorePriority);
 		T_SETV("scoreResource", _scoreResource);
 	} ENDMETHOD;
 	
@@ -65,20 +62,23 @@ CLASS("ReinforceAction", "Action")
 		private _tgtGarr = CALLM1(_state, "getGarrisonById", _tgtGarrId);
 
 		T_PRVAR(stage);
-		
+
 		private _sentComp = [];
+
 		// If we didn't start the action yet then we need to subtract from srcGarr
 		if(_stage == "new") then {
 			_sentComp = T_CALLM1("getReinfComp", _state);
 			private _negSentComp = _sentComp apply { _x * -1 };
+			// Remove from source garrison
 			CALLM1(_srcGarr, "modComp", _negSentComp);
-			// Add to tgtGarr
+			// Add to target garrison
 			CALLM1(_tgtGarr, "modComp", _sentComp);
 		} else {
 			T_PRVAR(splitGarrId);
 
 			private _splitGarr = CALLM1(_state, "getGarrisonById", _splitGarrId);
 			CALLM1(_tgtGarr, "mergeGarrison", _splitGarr);
+
 			//_sentComp = CALLM0(_splitGarr, "getComp");
 			//T_GETV("sentComp");
 		};
@@ -149,7 +149,7 @@ CLASS("ReinforceAction", "Action")
 				T_SETV("splitGarrId", _splitGarrId);
 
 				// Assign action to the split garrison.
-				SETV(_splitGarr, "currAction", _thisObject);
+				SETV_REF(_splitGarr, "currAction", _thisObject);
 
 				// Next stage
 				T_SETV("stage", "moving");

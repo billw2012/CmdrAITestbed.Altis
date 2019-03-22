@@ -38,6 +38,10 @@
 // It's a global flag, must be defined here
 #define OOP_ASSERT
 
+// Enable Arma Script Profiling for ALL class methods
+//#define ASP_PROFILE_ALL
+
+
 // Defining OOP_SCRIPTNAME it will add 	_fnc_scriptName = "..."; to each method created with OOP_Light
 // You can either define it here or usage of OOP_INFO_, ..., macros will cause its automatic definition
 // ! ! ! It's currently totally disabled because recompiling breaks file names in callstacks ! ! !
@@ -177,8 +181,8 @@ nameStr profilerSetCounter _oop_cnt; };
 // -----------------------------------------------------
 
 #ifdef OOP_ASSERT
-	#define SET_MEM(objNameStr, memNameStr, value) if([objNameStr, memNameStr, __FILE__, __LINE__] call OOP_assert_member) then {FORCE_SET_MEM(objNameStr, memNameStr, value)}
-	#define SET_MEM_REF(objNameStr, memNameStr, value) if([objNameStr, memNameStr, __FILE__, __LINE__] call OOP_assert_member_ref) then {FORCE_SET_MEM_REF(objNameStr, memNameStr, value)}
+	#define SET_MEM(objNameStr, memNameStr, value) if([objNameStr, memNameStr, __FILE__, __LINE__] call OOP_assert_member_is_not_ref) then {FORCE_SET_MEM(objNameStr, memNameStr, value)}
+	#define SET_MEM_REF(objNameStr, memNameStr, value) if([objNameStr, memNameStr, __FILE__, __LINE__] call OOP_assert_member_is_ref) then {FORCE_SET_MEM_REF(objNameStr, memNameStr, value)}
 	#define SET_STATIC_MEM(classNameStr, memNameStr, value) if([classNameStr, memNameStr, __FILE__, __LINE__] call OOP_assert_staticMember) then {FORCE_SET_STATIC_MEM(classNameStr, memNameStr, value)}
 	#define GET_MEM(objNameStr, memNameStr) ( if([objNameStr, memNameStr, __FILE__, __LINE__] call OOP_assert_member) then {FORCE_GET_MEM(objNameStr, memNameStr)}else{nil} )
 	#define GET_STATIC_MEM(classNameStr, memNameStr) ( if([classNameStr, memNameStr, __FILE__, __LINE__] call OOP_assert_staticMember) then {FORCE_GET_STATIC_MEM(classNameStr, memNameStr)}else{nil} )
@@ -240,6 +244,7 @@ private _classNameStr = OBJECT_PARENT_CLASS_STR(_objNameStr);
 
 #define GETM(objNameStr, methodNameStr) GET_METHOD(OBJECT_PARENT_CLASS_STR(objNameStr), methodNameStr)
 
+
 //Same performance for small functions
 //#define CALL_METHOD(objNameStr, methodNameStr, extraParams) ([objNameStr] + extraParams) call (call compile (CLASS_STATIC_MEM_NAME_STR(OBJECT_PARENT_CLASS_STR(objNameStr), methodNameStr)))
 #define CALL_METHOD(objNameStr, methodNameStr, extraParams) (([objNameStr] + extraParams) call GET_METHOD(OBJECT_PARENT_CLASS_STR(objNameStr), methodNameStr))
@@ -257,7 +262,6 @@ private _classNameStr = OBJECT_PARENT_CLASS_STR(_objNameStr);
 #define CALL_STATIC_METHOD_2(classNameStr, methodNameStr, a, b) (([classNameStr, a, b]) call GET_METHOD(classNameStr, methodNameStr))
 #define CALL_STATIC_METHOD_3(classNameStr, methodNameStr, a, b, c) (([classNameStr, a, b, c]) call GET_METHOD(classNameStr, methodNameStr))
 #define CALL_STATIC_METHOD_4(classNameStr, methodNameStr, a, b, c, d) (([classNameStr, a, b, c, d]) call GET_METHOD(classNameStr, methodNameStr))
-
 
 // Shortened variants of macros
 #define CALLM(a, b, c) CALL_METHOD(a, b, c)
@@ -319,19 +323,58 @@ private _classNameStr = OBJECT_PARENT_CLASS_STR(_objNameStr);
 
 #define STATIC_MEMBER(memNameStr) STATIC_VARIABLE(memNameStr)
 
-#define METHOD(methodNameStr) _oop_methodList pushBackUnique methodNameStr;  _oop_newMethodList pushBackUnique methodNameStr; \
+#ifdef ASP_PROFILE_ALL
+	#define METHOD(methodNameStr) \
+		_oop_methodList pushBackUnique methodNameStr;  \
+		_oop_newMethodList pushBackUnique methodNameStr; \
+		NAMESPACE setVariable [CLASS_METHOD_NAME_STR(_oop_classNameStr, methodNameStr), { \
+			private _classNameStr = OBJECT_PARENT_CLASS_STR(_this select 0); \
+			private _profileScope = createProfileScope (_classNameStr + "." + methodNameStr); \
+			_this call
+	#define ENDMETHOD } ]
+	#define METHOD_FILE(methodNameStr, path) \
+		_oop_methodList pushBackUnique methodNameStr; \
+		_oop_newMethodList pushBackUnique methodNameStr; \
+		NAMESPACE setVariable [CLASS_METHOD_NAME_STR(_oop_classNameStr, "inner" + methodNameStr), compile preprocessFileLineNumbers path]; \
+		NAMESPACE setVariable [CLASS_METHOD_NAME_STR(_oop_classNameStr, methodNameStr), { \
+			private _classNameStr = OBJECT_PARENT_CLASS_STR(_this select 0); \
+			private _profileScope = createProfileScope (_classNameStr + "." + methodNameStr); \
+			private _fn = NAMESPACE setVariable [CLASS_METHOD_NAME_STR(_oop_classNameStr, "inner" + methodNameStr); \
+			_this call _fn; \
+		}]
+
+	#define STATIC_METHOD(methodNameStr) \
+		_oop_methodList pushBackUnique methodNameStr; \
+		_oop_newMethodList pushBackUnique methodNameStr; \
+		NAMESPACE setVariable [CLASS_METHOD_NAME_STR(_oop_classNameStr, methodNameStr), { \
+			private _classNameStr = _this select 0; \
+			private _profileScope = createProfileScope (_classNameStr + "." + methodNameStr); \
+			_this call
+
+	#define STATIC_METHOD_FILE(methodNameStr, path) \
+		_oop_methodList pushBackUnique methodNameStr; \
+		_oop_newMethodList pushBackUnique methodNameStr; \
+		NAMESPACE setVariable [CLASS_METHOD_NAME_STR(_oop_classNameStr, "inner" + methodNameStr), compile preprocessFileLineNumbers path]; \
+		NAMESPACE setVariable [CLASS_METHOD_NAME_STR(_oop_classNameStr, methodNameStr), { \
+			private _classNameStr = _this select 0; \
+			private _profileScope = createProfileScope (_classNameStr + "." + methodNameStr); \
+			private _fn = NAMESPACE setVariable [CLASS_METHOD_NAME_STR(_oop_classNameStr, "inner" + methodNameStr); \
+			_this call _fn; \
+		}]
+#else
+	#define METHOD(methodNameStr) _oop_methodList pushBackUnique methodNameStr;  _oop_newMethodList pushBackUnique methodNameStr; \
 NAMESPACE setVariable [CLASS_METHOD_NAME_STR(_oop_classNameStr, methodNameStr),
+	#define ENDMETHOD ]
 
-#define ENDMETHOD ]
-
-#define METHOD_FILE(methodNameStr, path) _oop_methodList pushBackUnique methodNameStr; _oop_newMethodList pushBackUnique methodNameStr; \
+	#define METHOD_FILE(methodNameStr, path) _oop_methodList pushBackUnique methodNameStr; _oop_newMethodList pushBackUnique methodNameStr; \
 NAMESPACE setVariable [CLASS_METHOD_NAME_STR(_oop_classNameStr, methodNameStr), compile preprocessFileLineNumbers path]
 
-#define STATIC_METHOD(methodNameStr) _oop_methodList pushBackUnique methodNameStr; _oop_newMethodList pushBackUnique methodNameStr; \
+	#define STATIC_METHOD(methodNameStr) _oop_methodList pushBackUnique methodNameStr; _oop_newMethodList pushBackUnique methodNameStr; \
 NAMESPACE setVariable [CLASS_METHOD_NAME_STR(_oop_classNameStr, methodNameStr),
 
-#define STATIC_METHOD_FILE(methodNameStr, path) _oop_methodList pushBackUnique methodNameStr; _oop_newMethodList pushBackUnique methodNameStr; \
+	#define STATIC_METHOD_FILE(methodNameStr, path) _oop_methodList pushBackUnique methodNameStr; _oop_newMethodList pushBackUnique methodNameStr; \
 NAMESPACE setVariable [CLASS_METHOD_NAME_STR(_oop_classNameStr, methodNameStr), compile preprocessFileLineNumbers path]
+#endif
 
 // -----------------------------------------------------
 // |       M E T H O D   P A R A M E T E R S           |

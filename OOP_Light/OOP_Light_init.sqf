@@ -152,53 +152,51 @@ OOP_assert_member = {
 	if(!_valid) then {
 		[_file, _line, _classNameStr, _memNameStr] call OOP_error_memberNotFound;
 		DUMP_CALLSTACK;
-	} else {
-		// Check the member doesn't have the ref counted attribute (if it does we should
-		// be using the REF macros with it)
-		private _attr = (_memList select _memIdx) select 1;
-		if (ATTR_REFCOUNTED in _attr) then {
-			private _errorText = format ["class '%1' member '%2' is a ref but is NOT being treated like one!", _classNameStr, _memNameStr];
-			[_file, _line, _errorText] call OOP_error;
-		};
-		// _valid will still be true as we can still write to the variable
 	};
 	//Return value
 	_valid
 };
 
-//Check member ref and print error if it's not found or not a ref
-OOP_assert_member_ref = {
-	params["_objNameStr", "_memNameStr", "_file", "_line"];
-
-	//Get object's class
+OOP_member_has_attr = {
+	params["_objNameStr", "_memNameStr", "_attr"];
+	// NO asserting here, it should be done already before calling this
+	// Get object's class
 	private _classNameStr = OBJECT_PARENT_CLASS_STR(_objNameStr);
-	//Check if it's an object
-	if(isNil "_classNameStr") exitWith {
-		private _errorText = format ["class name is nil. Attempt to access member: %1", _memNameStr];
+	// Get member list of this class
+	private _memList = GET_SPECIAL_MEM(_classNameStr, MEM_LIST_STR);
+	// Get the member by name
+	private _memIdx = _memList findIf { (_x select 0) == _memNameStr };
+	// Return existance of attr
+	private _allAttr = (_memList select _memIdx) select 1;
+	(_attr in _allAttr)
+};
+
+// Check member is ref and print error if it's not
+OOP_assert_member_is_ref = {
+	params["_objNameStr", "_memNameStr", "_file", "_line"];
+	private _valid = [_objNameStr, _memNameStr, _file, _line] call OOP_assert_member;
+	if(!_valid) exitWith { false };
+	if(!([_objNameStr, _memNameStr, ATTR_REFCOUNTED] call OOP_member_has_attr)) exitWith {
+		private _errorText = format ["%1.%2 is doesn't have ATTR_REFCOUNTED attribute but is being accessed by a non REF function.", _objNameStr, _memNameStr];
 		[_file, _line, _errorText] call OOP_error;
 		DUMP_CALLSTACK;
 		false;
 	};
-	//Get member list of this class
-	private _memList = GET_SPECIAL_MEM(_classNameStr, MEM_LIST_STR);
-	//Check member
-	private _memIdx = _memList findIf { (_x select 0) == _memNameStr };
-	private _valid = _memIdx != -1;
-	if(!_valid) then {
-		[_file, _line, _classNameStr, _memNameStr] call OOP_error_memberNotFound;
+	true;
+};
+
+// Check member is not a ref and print error if it is
+OOP_assert_member_is_not_ref = {
+	params["_objNameStr", "_memNameStr", "_file", "_line"];
+	private _valid = [_objNameStr, _memNameStr, _file, _line] call OOP_assert_member;
+	if(!_valid) exitWith { false };
+	if(([_objNameStr, _memNameStr, ATTR_REFCOUNTED] call OOP_member_has_attr)) exitWith {
+		private _errorText = format ["%1.%2 is has ATTR_REFCOUNTED attribute but is being accessed via a REF function.", _objNameStr, _memNameStr];
+		[_file, _line, _errorText] call OOP_error;
 		DUMP_CALLSTACK;
-	} else {
-		// Check the member has the ref counted attribute (if it doesn't we shouldn't
-		// be using the REF macros with it)
-		private _attr = (_memList select _memIdx) select 1;
-		if !(ATTR_REFCOUNTED in _attr) then {
-			private _errorText = format ["class '%1' member '%2' is not a ref but is being treated like one!", _classNameStr, _memNameStr];
-			[_file, _line, _errorText] call OOP_error;
-		};
-		// _valid will still be true as we can still write to the variable
+		false;
 	};
-	//Return value
-	_valid
+	true;
 };
 
 //Check method and print error if it's not found

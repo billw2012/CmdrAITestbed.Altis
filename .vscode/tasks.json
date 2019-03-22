@@ -11,7 +11,11 @@
                 "-a",
                 "--parse-only",
                 "--load", "./../..",
-                "-i", "${file}"
+                "-i", "${file}",
+                "--command-dummy-unary ofstream_new",
+                "--command-dummy-binary 4|ofstream_write",
+                "--command-dummy-unary createProfileScope"
+
                 //"./../../${relativeFile}" 
             ],
             "options": {
@@ -46,7 +50,10 @@
                 "-a",
                 "--no-execute-print",
                 "--load", ".",
-                "-i", "${file}"
+                "-i", "${file}",
+                "--command-dummy-unary ofstream_new",
+                "--command-dummy-binary 4|ofstream_write",
+                "--command-dummy-unary createProfileScope"
             ],
             "options": {
                 "cwd": "${workspaceRoot}"
@@ -78,7 +85,10 @@
             "args": [
                 "-a",
                 "--load", "./../..",
-                "-E", "${file}"
+                "-E", "${file}",
+                "--command-dummy-unary ofstream_new",
+                "--command-dummy-binary 4|ofstream_write",
+                "--command-dummy-unary createProfileScope"
             ],
             "options": {
                 "cwd": "${workspaceRoot}/tools/SQF-VM"
@@ -110,7 +120,10 @@
             "args": [
                 "-a",
                 "--load", ".",
-                "--pretty-print", "${file}" 
+                "--pretty-print", "${file}",
+                "--command-dummy-unary ofstream_new",
+                "--command-dummy-binary 4|ofstream_write",
+                "--command-dummy-unary createProfileScope"
                 //"--pretty-print", "./../../${relativeFile}" 
             ],
             "options": {
