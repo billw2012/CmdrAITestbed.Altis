@@ -38,7 +38,7 @@ CLASS("State", "")
 		private _garrisonMarkers = _markers select { markerType _x == type_garrison };
 		{
 			private _garrisonMarker = _x;
-			private _newGarrison = NEW("Garrison", []);
+			private _newGarrison = NEW("Garrison", [_thisObject]);
 			REF(_newGarrison);
 			CALLM1(_newGarrison, "initFromMarker", _garrisonMarker);
 			private _idx = _garrisons pushBack _newGarrison;
@@ -65,7 +65,7 @@ CLASS("State", "")
 				_newGarrMkr setMarkerType type_garrison;
 				_newGarrMkr setMarkerColor (markerColor _outpostMkr);
 				_newGarrMkr setMarkerText (markerText _outpostMkr);
-				private _newGarrison = NEW("Garrison", []);
+				private _newGarrison = NEW("Garrison", [_thisObject]);
 				REF(_newGarrison);
 				CALLM1(_newGarrison, "initFromMarker", _newGarrMkr);
 				private _garrisonId = _garrisons pushBack _newGarrison;
@@ -212,6 +212,7 @@ CLASS("State", "")
 			REF(_copy);
 			_copy
 		};
+
 		SETV(_simState, "garrisons", _simGarrisons);
 		private _simOutposts = _outposts apply { 
 			private _copy = CALLM0(_x, "simCopy");
@@ -227,6 +228,7 @@ CLASS("State", "")
 		params [P_THISOBJECT];
 
 		private _aliveGarrisons = T_CALLM0("getAliveGarrisons");
+
 		// Update garrisons
 		{
 			CALLM1(_x, "update", _thisObject);
@@ -251,10 +253,7 @@ CLASS("State", "")
 			};
 		} forEach _aliveGarrisons;
 
-		{
-			T_CALLM1("garrisonKilled", _x);
-		} forEach (_calcedGarrisons select { CALLM0(_x, "isDead") });
-
+		// Spawn new units at spawns if it is time
 		T_PRVAR(lastSpawnT);
 		if(time - _lastSpawnT > SPAWN_INTERVAL) then {
 			T_PRVAR(spawningOutposts);
@@ -268,18 +267,13 @@ CLASS("State", "")
 
 				if !(_garrison isEqualType "") then {
 					private _outpostSide = CALLM0(_outpost, "getSide");
-					_garrison = NEW("Garrison", []);
+					_garrison = NEW("Garrison", [_thisObject]);
 					private _newGarrMkr = createMarker [ str(_outpostId) + "_garr_" + str(time), _outpostPos ];
 					_newGarrMkr setMarkerShape "ICON";
 					_newGarrMkr setMarkerType type_garrison;
 					_newGarrMkr setMarkerColor _outpostSide;
-					//_newGarrMkr setMarkerText "20/4";
 					CALLM1(_garrison, "initFromMarker", _newGarrMkr);
 					T_CALLM1("addGarrison", _garrison);
-
-					//CALLM2(_garrison, "setComp", 20, 4);
-					//CALLM1(_garrison, "setPos", _outpostPos);
-					//CALLM1(_garrison, "setSide", _outpostSide);
 				};
 				
 				CALLM2(_garrison, "setComp", _desiredComp#0 * 2, _desiredComp#1 * 2);
@@ -291,7 +285,6 @@ CLASS("State", "")
 	METHOD("garrisonKilled") {
 		params [P_THISOBJECT, P_STRING("_garrison")];
 		T_CALLM1("detachGarrison", _garrison);
-		CALLM0(_garrison, "killed");
 	} ENDMETHOD;
 	
 

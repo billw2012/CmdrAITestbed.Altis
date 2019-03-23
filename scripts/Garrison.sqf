@@ -324,20 +324,28 @@ CLASS("Garrison", "RefCounted")
 	// Split the garrison, based on composition, returning the new one
 	METHOD("splitGarrison") {
 		params [P_THISOBJECT, P_ARRAY("_newComp")];
-		private _newGarrison = NEW("Garrison", []);
+		T_PRVAR(ownerState);
 		T_PRVAR(marker);
 		T_PRVAR(unitCount);
 		T_PRVAR(vehCount);
 		T_PRVAR(pos);
 		T_PRVAR(garrSide);
 
+		private _newGarrison = NEW("Garrison", [_ownerState]);
+
 		// Cap the new composition based on our composition
 		private _otherUnitCount = _unitCount min _newComp#0;
 		private _otherVehCount = _vehCount min _newComp#1;
+
+		if(_otherUnitCount == 0 and _otherVehCount == 0) exitWith {
+			OOP_ERROR_1("Cannot split garrison from %1 with no forces.", _thisObject)
+		};
+
 		// Remove from our comp
 		_unitCount = _unitCount - _otherUnitCount;
 		_vehCount = _vehCount - _otherVehCount;
 		T_CALLM2("setComp", _unitCount, _vehCount);
+
 		// Create new marker and update it
 		if (_marker isEqualType "") then {
 			private _newMarker = createMarker [_marker + "_detachment_" + str(time), _pos];
@@ -345,6 +353,7 @@ CLASS("Garrison", "RefCounted")
 			_newMarker setMarkerShape (markerShape _marker);
 			SETV(_newGarrison, "marker", _newMarker);
 		};
+
 		// Update rest of new garrison vars
 		CALLM2(_newGarrison, "setComp", _otherUnitCount, _otherVehCount);
 		CALLM1(_newGarrison, "setPos", _pos);
