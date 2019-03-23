@@ -9,6 +9,8 @@
 
 // Collection of unitCount/vehCount and their orders
 CLASS("Garrison", "RefCounted")
+	VARIABLE("id");
+	VARIABLE("ownerState");
 	VARIABLE("marker");
 	VARIABLE("unitCount");
 	VARIABLE("vehCount");
@@ -17,9 +19,15 @@ CLASS("Garrison", "RefCounted")
 	VARIABLE("inCombat");
 	VARIABLE("pos");
 	VARIABLE("garrSide");
+	VARIABLE("outpostId");
 
+	// TODO: no reason this shouldn't take ref to state, it exists IN state after all.
+	// TODO: id should be arbitrary not index into array.
+	// TODO: add proper clean up of deleted garrisons.
 	METHOD("new") {
-		params [P_THISOBJECT];
+		params [P_THISOBJECT, P_STRING("_ownerState")];
+		T_SETV("id", -1);
+		T_SETV("ownerState", _ownerState);
 		T_SETV("marker", objNull);
 		T_SETV("unitCount", 0);
 		T_SETV("vehCount", 0);
@@ -28,6 +36,7 @@ CLASS("Garrison", "RefCounted")
 		T_SETV("inCombat", false);
 		T_SETV("pos", []);
 		T_SETV("garrSide", side_none);
+		T_SETV("outpostId", -1);
 	} ENDMETHOD;
 
 	// METHOD("delete") {
@@ -46,8 +55,8 @@ CLASS("Garrison", "RefCounted")
 
 		private _parts = (markerText _marker) splitString ", :;/";
 
-		private _unitCount = if(count _parts >= 1) then { parseNumber (_parts select 0) } else { 0 };
-		private _vehCount = if(count _parts >= 2) then { parseNumber (_parts select 1) } else { 0 };
+		private _unitCount = if(count _parts >= 1) then { parseNumber (_parts#0) } else { 0 };
+		private _vehCount = if(count _parts >= 2) then { parseNumber (_parts#1) } else { 0 };
 
 		OOP_INFO_3("Initializing Garrison from %1 [%2/%3]", _marker, _unitCount, _vehCount);
 
@@ -56,6 +65,12 @@ CLASS("Garrison", "RefCounted")
 		T_SETV("inCombat", false);
 		T_SETV("pos", markerPos _marker);
 		T_SETV("garrSide", markerColor _marker);
+	} ENDMETHOD;
+
+	METHOD("setId") {
+		params [P_THISOBJECT, P_NUMBER("_id")];
+		T_SETV("id", _id);
+		T_CALLM0("updateMarkerText");
 	} ENDMETHOD;
 
 	/*
@@ -84,9 +99,9 @@ CLASS("Garrison", "RefCounted")
 	*/
 
 	METHOD("simCopy") {
-		params [P_THISOBJECT, P_STRING("_state")];
-		private _newGarr = NEW("Garrison", []);
-
+		params [P_THISOBJECT, P_STRING("_newState")];
+		private _newGarr = NEW("Garrison", [_newState]);
+		SETV(_newGarr, "id", T_GETV("id"));
 		SETV(_newGarr, "unitCount", T_GETV("unitCount"));
 		SETV(_newGarr, "vehCount", T_GETV("vehCount"));
 		SETV_REF(_newGarr, "order", T_GETV("order"));
@@ -94,20 +109,44 @@ CLASS("Garrison", "RefCounted")
 		SETV(_newGarr, "inCombat", T_GETV("inCombat"));
 		SETV(_newGarr, "pos", +T_GETV("pos"));
 		SETV(_newGarr, "garrSide", T_GETV("garrSide"));
-
+		SETV(_newGarr, "outpostId", T_GETV("outpostId"));
 		_newGarr
 	} ENDMETHOD;
 
+	METHOD("updateMarkerText") {
+		params [P_THISOBJECT];
+		T_PRVAR(marker);
+		if (_marker isEqualType "") then {
+			T_PRVAR(unitCount);
+			T_PRVAR(vehCount);
+			T_PRVAR(id);
+			_marker setMarkerText (format ["%1/%2 (%3)", _unitCount, _vehCount, _id]);
+		};
+	} ENDMETHOD;
+	
 	METHOD("setComp") {
 		params [P_THISOBJECT, P_NUMBER("_newUnitCount"), P_NUMBER("_newVehCount")];
 		private _unitCount = 0 max _newUnitCount;
 		private _vehCount = 0 max _newVehCount;
 		T_SETV("unitCount", _unitCount);
 		T_SETV("vehCount", _vehCount);
-		T_PRVAR(marker);
-		if (_marker isEqualType "") then {
-			_marker setMarkerText (format ["%1/%2", _unitCount, _vehCount]);
+		if(_unitCount == 0 and _vehCount == 0) then {
+			T_CALLM0("killed");
+		} else {
+			T_CALLM0("updateMarkerText");
 		};
+	} ENDMETHOD;
+
+	METHOD("killed") {
+		params [P_THISOBJECT];
+		T_PRVAR(marker);
+		T_PRVAR(ownerState);
+		T_SETV("unitCount", 0);
+		T_SETV("vehCount", 0);
+		if (_marker isEqualType "") then {
+			deleteMarker _marker;
+		};
+		CALLM1(_ownerState, "garrisonKilled", _thisObject);
 	} ENDMETHOD;
 
 	METHOD("getComp") {
@@ -164,10 +203,11 @@ CLASS("Garrison", "RefCounted")
 		params [P_THISOBJECT, P_ARRAY("_mod")];
 		T_PRVAR(unitCount);
 		T_PRVAR(vehCount);
-		_unitCount = 0 max (_unitCount + (_mod select 0));
-		_vehCount = 0 max (_vehCount + (_mod select 1));
+		_unitCount = 0 max (_unitCount + _mod#0);
+		_vehCount = 0 max (_vehCount + _mod#1);
 		T_SETV("unitCount", _unitCount);
 		T_SETV("vehCount", _vehCount);
+		T_CALLM0("updateMarkerText");
 	} ENDMETHOD;
 
 	METHOD("isDead") {
@@ -180,6 +220,11 @@ CLASS("Garrison", "RefCounted")
 	METHOD("giveOrder") {
 		params [P_THISOBJECT, P_STRING("_newOrder")];
 		T_SETV_REF("order", _newOrder);
+	} ENDMETHOD;
+
+	METHOD("cancelOrder") {
+		params [P_THISOBJECT];
+		T_SETV_REF("order", objNull);
 	} ENDMETHOD;
 
 	METHOD("isOrderComplete") {
@@ -212,7 +257,7 @@ CLASS("Garrison", "RefCounted")
 				T_PRVAR(garrSide);
 				_marker setMarkerPos _pos;
 				_marker setMarkerColor _garrSide;
-				_marker setMarkerText (format ["%1/%2", _unitCount, _vehCount]);
+				T_CALLM0("updateMarkerText");
 			};
 		};
 
@@ -287,17 +332,15 @@ CLASS("Garrison", "RefCounted")
 		T_PRVAR(garrSide);
 
 		// Cap the new composition based on our composition
-		private _otherUnitCount = _unitCount min (_newComp select 0);
-		private _otherVehCount = _vehCount min (_newComp select 1);
+		private _otherUnitCount = _unitCount min _newComp#0;
+		private _otherVehCount = _vehCount min _newComp#1;
 		// Remove from our comp
 		_unitCount = _unitCount - _otherUnitCount;
 		_vehCount = _vehCount - _otherVehCount;
 		T_CALLM2("setComp", _unitCount, _vehCount);
 		// Create new marker and update it
 		if (_marker isEqualType "") then {
-			private _newMarker = createMarker [
-				format ["%1/%2", _otherUnitCount, _otherVehCount], _pos
-			];
+			private _newMarker = createMarker [_marker + "_detachment_" + str(time), _pos];
 			_newMarker setMarkerType (markerType _marker);
 			_newMarker setMarkerShape (markerShape _marker);
 			SETV(_newGarrison, "marker", _newMarker);
@@ -310,7 +353,7 @@ CLASS("Garrison", "RefCounted")
 		_newGarrison
 	} ENDMETHOD;
 
-	// Split the garrison into this one
+	// Merge the garrison into this one
 	METHOD("mergeGarrison") {
 		params [P_THISOBJECT, P_STRING("_garr")];
 		T_PRVAR(unitCount);
@@ -318,12 +361,11 @@ CLASS("Garrison", "RefCounted")
 		
 		// Merge comps, this is all merge garrisons does
 		private _otherComp = CALLM0(_garr, "getComp");
-		_unitCount = _unitCount + (_otherComp select 0);
-		_vehCount = _vehCount + (_otherComp select 1);
+		_unitCount = _unitCount + _otherComp#0;
+		_vehCount = _vehCount + _otherComp#1;
 		T_CALLM2("setComp", _unitCount, _vehCount);
 
 		// Clear out comp of old garrison, it will be dead after this
 		CALLM2(_garr, "setComp", 0, 0);
-
 	} ENDMETHOD;
 ENDCLASS;

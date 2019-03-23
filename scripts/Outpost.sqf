@@ -8,15 +8,19 @@
 #include "Constants.h"
 
 CLASS("Outpost", "RefCounted")
+	VARIABLE("id");
 	VARIABLE("marker");
 	VARIABLE("pos");
 	VARIABLE("outpostSide");
+	VARIABLE("garrisonId");
 
 	METHOD("new") {
 		params [P_THISOBJECT];
+		T_SETV("id", -1);
 		T_SETV("marker", objNull);
 		T_SETV("pos", []);
 		T_SETV("outpostSide", side_none);
+		T_SETV("garrisonId", -1);
 	} ENDMETHOD;
 
 	METHOD("initFromMarker") {
@@ -30,9 +34,20 @@ CLASS("Outpost", "RefCounted")
 	METHOD("simCopy") {
 		params [P_THISOBJECT, P_STRING("_state")];
 		private _newOutpost = NEW("Outpost", []);
+		SETV(_newOutpost, "id", T_GETV("id"));
 		SETV(_newOutpost, "pos", +T_GETV("pos"));
 		SETV(_newOutpost, "outpostSide", T_GETV("outpostSide"));
+		SETV(_newOutpost, "garrisonId", T_GETV("garrisonId"));
 		_newOutpost
+	} ENDMETHOD;
+
+	METHOD("setId") {
+		params [P_THISOBJECT, P_NUMBER("_id")];
+		T_SETV("id", _id);
+		T_PRVAR(marker);
+		if (_marker isEqualType "") then {
+			_marker setMarkerText str(_id);
+		};
 	} ENDMETHOD;
 
 	METHOD("getPos") {

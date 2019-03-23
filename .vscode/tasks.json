@@ -165,7 +165,7 @@
             "problemMatcher":
             {
                 "owner": "sqf",
-                "fileLocation": ["relative", "${workspaceRoot}"],
+                "fileLocation": "absolute", //["relative", "${workspaceRoot}"],
                 "pattern": [
                     {
                         "regexp": "^\\[(RNT|WRN|ERR)\\]\\[L?(.+)\\|C(.+)\\|(.*?)\\](.*)$",

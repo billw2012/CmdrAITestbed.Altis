@@ -8,18 +8,18 @@ class EditorData
 	toggles=1;
 	class ItemIDProvider
 	{
-		nextID=43;
+		nextID=50;
 	};
 	class MarkerIDProvider
 	{
-		nextID=3;
+		nextID=6;
 	};
 	class Camera
 	{
 		pos[]={16071.698,211.60777,16257.698};
-		dir[]={0.74361056,-0.6638872,0.079354487};
-		up[]={0.65726376,0.74759656,0.095413692};
-		aside[]={0.12266907,0.018793799,-0.99226975};
+		dir[]={0.70971859,-0.70124626,0.067485794};
+		up[]={0.69549835,0.71269393,0.091378108};
+		aside[]={0.11217528,0.017916381,-0.99352765};
 	};
 };
 binarizationWanted=0;
@@ -78,108 +78,18 @@ class Mission
 	};
 	class Entities
 	{
-		items=9;
+		items=6;
 		class Item0
 		{
 			dataType="Marker";
-			position[]={12721.394,3.3769531,15296.004};
-			name="marker_1";
-			text="20/10";
-			type="mil_flag";
-			colorName="ColorEAST";
-			id=3;
-			atlOffset=-29.366074;
-		};
-		class Item1
-		{
-			dataType="Marker";
-			position[]={11301.325,45.539673,15328.858};
-			name="marker_8";
-			text="4/2";
-			type="mil_flag";
-			colorName="ColorEAST";
-			id=15;
-		};
-		class Item2
-		{
-			dataType="Group";
-			side="West";
-			class Entities
-			{
-				items=1;
-				class Item0
-				{
-					dataType="Object";
-					class PositionInfo
-					{
-						position[]={18857.445,34.955471,17410.793};
-					};
-					side="West";
-					flags=7;
-					class Attributes
-					{
-					};
-					id=20;
-					type="B_soldier_AAT_F";
-				};
-			};
-			class Attributes
-			{
-			};
-			id=19;
-		};
-		class Item3
-		{
-			dataType="Marker";
-			position[]={11966.028,34.073593,16183.328};
+			position[]={9985.3184,87.964058,15018.76};
 			name="marker_9";
 			text="4/2";
 			type="mil_flag";
-			colorName="ColorEAST";
+			colorName="ColorGUER";
 			id=21;
 		};
-		class Item4
-		{
-			dataType="Marker";
-			position[]={13011.771,7.3447266,15618.053};
-			name="marker_2";
-			text="20/10";
-			type="mil_flag";
-			colorName="ColorEAST";
-			id=23;
-			atlOffset=-6.5030947;
-		};
-		class Item5
-		{
-			dataType="Marker";
-			position[]={11616.46,21.464306,14884.085};
-			name="marker_10";
-			text="4/2";
-			type="mil_flag";
-			colorName="ColorEAST";
-			id=24;
-		};
-		class Item6
-		{
-			dataType="Marker";
-			position[]={11228.38,23.622242,14342.49};
-			name="marker_11";
-			text="4/2";
-			type="mil_flag";
-			colorName="ColorEAST";
-			id=25;
-		};
-		class Item7
-		{
-			dataType="Marker";
-			position[]={10751.426,96.939285,14904.804};
-			name="marker_12";
-			text="4/2";
-			type="mil_flag";
-			colorName="ColorEAST";
-			id=26;
-		};
-		class Item8
+		class Item1
 		{
 			dataType="Group";
 			side="West";
@@ -207,6 +117,47 @@ class Mission
 			{
 			};
 			id=41;
+		};
+		class Item2
+		{
+			dataType="Marker";
+			position[]={14007.559,-6.8623047,14987.646};
+			name="marker_3";
+			text="20/10";
+			type="mil_flag";
+			colorName="ColorEAST";
+			id=44;
+			atlOffset=8.2802219;
+		};
+		class Item3
+		{
+			dataType="Marker";
+			position[]={12988.672,35.773438,15008.345};
+			name="marker_5";
+			text="2/5";
+			type="mil_circle";
+			colorName="ColorEAST";
+			id=47;
+			atlOffset=9.9473534;
+		};
+		class Item4
+		{
+			dataType="Marker";
+			position[]={11017.985,74.052071,15018.35};
+			name="marker_6";
+			text="2/5";
+			type="mil_circle";
+			colorName="ColorGUER";
+			id=48;
+		};
+		class Item5
+		{
+			dataType="Marker";
+			position[]={11993.311,20.198326,15008.344};
+			name="marker_7";
+			type="mil_circle";
+			colorName="ColorYellow";
+			id=49;
 		};
 	};
 };

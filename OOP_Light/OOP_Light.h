@@ -38,9 +38,6 @@
 // It's a global flag, must be defined here
 #define OOP_ASSERT
 
-// Enable Arma Script Profiling for ALL class methods
-//#define ASP_PROFILE_ALL
-
 
 // Defining OOP_SCRIPTNAME it will add 	_fnc_scriptName = "..."; to each method created with OOP_Light
 // You can either define it here or usage of OOP_INFO_, ..., macros will cause its automatic definition
@@ -97,6 +94,11 @@ nameStr profilerSetCounter _oop_cnt; };
 #define PROFILER_COUNTER_INIT(nameStr)
 #define PROFILER_COUNTER_INC(nameStr)
 #define PROFILER_COUNTER_DEC(nameStr)
+#endif
+
+// Minimum amount of time for a function to take before its profile entry will be written out
+#ifndef OOP_PROFILE_MIN_T
+	#define OOP_PROFILE_MIN_T 0.01
 #endif
 
 /*
@@ -323,43 +325,55 @@ private _classNameStr = OBJECT_PARENT_CLASS_STR(_objNameStr);
 
 #define STATIC_MEMBER(memNameStr) STATIC_VARIABLE(memNameStr)
 
-#ifdef ASP_PROFILE_ALL
+#ifdef OOP_PROFILE
 	#define METHOD(methodNameStr) \
 		_oop_methodList pushBackUnique methodNameStr;  \
 		_oop_newMethodList pushBackUnique methodNameStr; \
 		NAMESPACE setVariable [CLASS_METHOD_NAME_STR(_oop_classNameStr, methodNameStr), { \
-			private _classNameStr = OBJECT_PARENT_CLASS_STR(_this select 0); \
-			private _profileScope = createProfileScope (_classNameStr + "." + methodNameStr); \
-			_this call
-	#define ENDMETHOD } ]
+			private _profileTStart = time; \
+			private _result = _this call
+	#define ENDMETHOD ;\
+			private _totalProfileT = time - _profileTStart; \
+			if(_totalProfileT > OOP_PROFILE_MIN_T) then { \
+				OOP_PROFILE_1("%1", _totalProfileT); \
+			}; \
+			if(!(isNil "_result")) then { _result } else { nil } \
+		} ]
 	#define METHOD_FILE(methodNameStr, path) \
 		_oop_methodList pushBackUnique methodNameStr; \
 		_oop_newMethodList pushBackUnique methodNameStr; \
 		NAMESPACE setVariable [CLASS_METHOD_NAME_STR(_oop_classNameStr, "inner" + methodNameStr), compile preprocessFileLineNumbers path]; \
 		NAMESPACE setVariable [CLASS_METHOD_NAME_STR(_oop_classNameStr, methodNameStr), { \
-			private _classNameStr = OBJECT_PARENT_CLASS_STR(_this select 0); \
-			private _profileScope = createProfileScope (_classNameStr + "." + methodNameStr); \
-			private _fn = NAMESPACE setVariable [CLASS_METHOD_NAME_STR(_oop_classNameStr, "inner" + methodNameStr); \
-			_this call _fn; \
+			private _profileTStart = time; \
+			private _fn = NAMESPACE getVariable CLASS_METHOD_NAME_STR(_oop_classNameStr, "inner" + methodNameStr); \
+			private _result = _this call _fn; \
+			private _totalProfileT = time - _profileTStart; \
+			if(_totalProfileT > OOP_PROFILE_MIN_T) then { \
+				OOP_PROFILE_1("%1", _totalProfileT); \
+			}; \
+			if(!(isNil "_result")) then { _result } else { nil } \
 		}]
 
 	#define STATIC_METHOD(methodNameStr) \
 		_oop_methodList pushBackUnique methodNameStr; \
 		_oop_newMethodList pushBackUnique methodNameStr; \
 		NAMESPACE setVariable [CLASS_METHOD_NAME_STR(_oop_classNameStr, methodNameStr), { \
-			private _classNameStr = _this select 0; \
-			private _profileScope = createProfileScope (_classNameStr + "." + methodNameStr); \
-			_this call
+			private _profileTStart = time; \
+			private _result = _this call
 
 	#define STATIC_METHOD_FILE(methodNameStr, path) \
 		_oop_methodList pushBackUnique methodNameStr; \
 		_oop_newMethodList pushBackUnique methodNameStr; \
 		NAMESPACE setVariable [CLASS_METHOD_NAME_STR(_oop_classNameStr, "inner" + methodNameStr), compile preprocessFileLineNumbers path]; \
 		NAMESPACE setVariable [CLASS_METHOD_NAME_STR(_oop_classNameStr, methodNameStr), { \
-			private _classNameStr = _this select 0; \
-			private _profileScope = createProfileScope (_classNameStr + "." + methodNameStr); \
+			private _profileTStart = time; \
 			private _fn = NAMESPACE setVariable [CLASS_METHOD_NAME_STR(_oop_classNameStr, "inner" + methodNameStr); \
-			_this call _fn; \
+			private _result = _this call _fn; \
+			private _totalProfileT = time - _profileTStart; \
+			if(_totalProfileT > OOP_PROFILE_MIN_T) then { \
+				OOP_PROFILE_1("%1", _totalProfileT); \
+			}; \
+			if(!(isNil "_result")) then { _result } else { nil } \
 		}]
 #else
 	#define METHOD(methodNameStr) _oop_methodList pushBackUnique methodNameStr;  _oop_newMethodList pushBackUnique methodNameStr; \
@@ -557,6 +571,22 @@ objNameStr \
 #define WRITE_LOG(text) __OFSTREAM_OUT(OFSTREAM_FILE, text)
 #else
 #define WRITE_LOG(text) diag_log text
+#endif
+
+#ifdef OOP_PROFILE
+#define OOP_PROFILE_0(str) private _o_str = format ["[%1.%2] PROFILE: %3", LOG_0, LOG_1, str]; __OFSTREAM_OUT("oop_profile.rpt", _o_str)
+#define OOP_PROFILE_1(str, a) private _o_str = format ["[%1.%2] PROFILE: %3",LOG_0, LOG_1, format [str, a]]; __OFSTREAM_OUT("oop_profile.rpt", _o_str)
+#define OOP_PROFILE_2(str, a, b) private _o_str = format ["[%1.%2] PROFILE: %3", LOG_0, LOG_1, format [str, a, b]]; __OFSTREAM_OUT("oop_profile.rpt", _o_str)
+#define OOP_PROFILE_3(str, a, b, c) private _o_str = format ["[%1.%2] PROFILE: %3", LOG_0, LOG_1, format [str, a, b, c]]; __OFSTREAM_OUT("oop_profile.rpt", _o_str)
+#define OOP_PROFILE_4(str, a, b, c, d) private _o_str = format ["[%1.%2] PROFILE: %3", LOG_0, LOG_1, format [str, a, b, c, d]]; __OFSTREAM_OUT("oop_profile.rpt", _o_str)
+#define OOP_PROFILE_5(str, a, b, c, d, e) private _o_str = format ["[%1.%2] PROFILE: %3", LOG_0, LOG_1, format [str, a, b, c, d, e]]; __OFSTREAM_OUT("oop_profile.rpt", _o_str)
+#else
+#define OOP_PROFILE_0(str)
+#define OOP_PROFILE_1(str, a)
+#define OOP_PROFILE_2(str, a, b)
+#define OOP_PROFILE_3(str, a, b, c)
+#define OOP_PROFILE_4(str, a, b, c, d)
+#define OOP_PROFILE_5(str, a, b, c, d, e)
 #endif
 
 #ifdef OOP_INFO

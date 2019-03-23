@@ -123,7 +123,7 @@ OOP_assert_staticMember = {
 	};
 	//Check static member
 	
-	private _valid = (_memList findIf { (_x select 0) == _memNameStr }) != -1;
+	private _valid = (_memList findIf { _x#0 == _memNameStr }) != -1;
 	if(!_valid) then {
 		[_file, _line, _classNameStr, _memNameStr] call OOP_error_memberNotFound;
 		DUMP_CALLSTACK;
@@ -147,7 +147,7 @@ OOP_assert_member = {
 	//Get member list of this class
 	private _memList = GET_SPECIAL_MEM(_classNameStr, MEM_LIST_STR);
 	//Check member
-	private _memIdx = _memList findIf { (_x select 0) == _memNameStr };
+	private _memIdx = _memList findIf { _x#0 == _memNameStr };
 	private _valid = _memIdx != -1;
 	if(!_valid) then {
 		[_file, _line, _classNameStr, _memNameStr] call OOP_error_memberNotFound;
@@ -165,9 +165,9 @@ OOP_member_has_attr = {
 	// Get member list of this class
 	private _memList = GET_SPECIAL_MEM(_classNameStr, MEM_LIST_STR);
 	// Get the member by name
-	private _memIdx = _memList findIf { (_x select 0) == _memNameStr };
+	private _memIdx = _memList findIf { _x#0 == _memNameStr };
 	// Return existance of attr
-	private _allAttr = (_memList select _memIdx) select 1;
+	private _allAttr = (_memList select _memIdx)#1;
 	(_attr in _allAttr)
 };
 

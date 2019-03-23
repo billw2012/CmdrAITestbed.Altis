@@ -1,13 +1,5 @@
-_fn = {
-    diag_log "a";
-};
 
-fn_a = {
-    call _fn;
-};
+#define FUNC FUNC2
+#define FUNC2 diag_log "test"
 
-_fn = {
-	diag_log "b";
-};
-
-call fn_a;
+FUNC;
