@@ -8,3 +8,5 @@
 #define VEHICLE_SPEED_MS (SIM_RATE * 40 * 0.277778)
 
 #define SPAWN_INTERVAL (300/SIM_RATE)
+
+#define MIN_COMP [4, 1]

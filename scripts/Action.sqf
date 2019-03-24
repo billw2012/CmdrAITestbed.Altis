@@ -54,6 +54,11 @@ CLASS("Action", "RefCounted")
 		
 	} ENDMETHOD;
 
+	METHOD("getLabel") {
+		params [P_THISOBJECT];
+		""
+	} ENDMETHOD;
+
 	// Toolkit for scoring actions
 
 	// Get a value that falls off from 1 to 0 with distance, scaled by k.

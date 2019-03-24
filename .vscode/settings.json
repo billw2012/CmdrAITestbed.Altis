@@ -1,2 +1,16 @@
 {
+    "logFileHighlighter.customPatterns": [
+        {
+            "pattern": "Error",
+            "foreground": "red"
+        },
+        {
+            "pattern": "INFO",
+            "foreground": "#AAF"
+        },
+        {
+            "pattern": "PROFILE",
+            "foreground": "#AFA"
+        },
+    ]
 }

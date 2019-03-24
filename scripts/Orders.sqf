@@ -29,7 +29,7 @@ CLASS("MoveOrder", "Order")
 		params [P_THISOBJECT, P_STRING("_orderName"), P_NUMBER("_garrisonId"), P_ARRAY("_targetPos")];
 		T_SETV("garrisonId", _garrisonId);
 		T_SETV("targetPos", _targetPos);
-		T_SETV("lastT", time);
+		T_SETV("lastT", simtime);
 		OOP_INFO_3("MoveOrder %1 %2->%3 created", _orderName, _garrisonId, _targetPos);
 	} ENDMETHOD;
 
@@ -46,8 +46,8 @@ CLASS("MoveOrder", "Order")
 		private _speed = CALLM0(_garrison, "getSpeed");
 		private _garrisonPos = CALLM0(_garrison, "getPos");
 		private _dist = _targetPos distance _garrisonPos;
-		private _dt = time - _lastT;
-		T_SETV("lastT", time);
+		private _dt = simtime - _lastT;
+		T_SETV("lastT", simtime);
 
 		if(_dist > 10) then {
 			private _travel = _dist min (_speed * _dt);

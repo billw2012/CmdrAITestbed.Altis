@@ -120,14 +120,20 @@ CLASS("Garrison", "RefCounted")
 			T_PRVAR(unitCount);
 			T_PRVAR(vehCount);
 			T_PRVAR(id);
-			_marker setMarkerText (format ["%1/%2 (%3)", _unitCount, _vehCount, _id]);
+			T_PRVAR(currAction);
+			private _actionText = if(_currAction isEqualType "" and {!GETV(_currAction, "complete")}) then {
+				"[" + CALLM0(_currAction, "getLabel") + "]"
+			} else {
+				""
+			};
+			_marker setMarkerText (format ["     %1/%2 (g%3) %4", _unitCount, _vehCount, _id, _actionText]);
 		};
 	} ENDMETHOD;
 	
 	METHOD("setComp") {
 		params [P_THISOBJECT, P_NUMBER("_newUnitCount"), P_NUMBER("_newVehCount")];
-		private _unitCount = 0 max _newUnitCount;
-		private _vehCount = 0 max _newVehCount;
+		private _unitCount = 0 max floor _newUnitCount;
+		private _vehCount = 0 max floor _newVehCount;
 		T_SETV("unitCount", _unitCount);
 		T_SETV("vehCount", _vehCount);
 		if(_unitCount == 0 and _vehCount == 0) then {
@@ -184,6 +190,21 @@ CLASS("Garrison", "RefCounted")
 		};
 	} ENDMETHOD;
 
+	METHOD("getAction") {
+		params [P_THISOBJECT];
+		T_GETV("currAction")
+	} ENDMETHOD;
+
+	METHOD("setAction") {
+		params [P_THISOBJECT, P_STRING("_action")];
+		T_SETV_REF("currAction", _action);
+	} ENDMETHOD;
+
+	METHOD("clearAction") {
+		params [P_THISOBJECT];
+		T_SETV_REF("currAction", objNull);
+	} ENDMETHOD;
+
 	METHOD("getSpeed") {
 		params [P_THISOBJECT];
 		T_PRVAR(unitCount);
@@ -203,8 +224,8 @@ CLASS("Garrison", "RefCounted")
 		params [P_THISOBJECT, P_ARRAY("_mod")];
 		T_PRVAR(unitCount);
 		T_PRVAR(vehCount);
-		_unitCount = 0 max (_unitCount + _mod#0);
-		_vehCount = 0 max (_vehCount + _mod#1);
+		_unitCount = 0 max floor (_unitCount + _mod#0);
+		_vehCount = 0 max floor (_vehCount + _mod#1);
 		T_SETV("unitCount", _unitCount);
 		T_SETV("vehCount", _vehCount);
 		T_CALLM0("updateMarkerText");
@@ -214,7 +235,7 @@ CLASS("Garrison", "RefCounted")
 		params [P_THISOBJECT];
 		T_PRVAR(unitCount);
 		T_PRVAR(vehCount);
-		(_unitCount + _vehCount) == 0
+		(0 max floor (_unitCount + _vehCount)) == 0
 	} ENDMETHOD;
 
 	METHOD("giveOrder") {
@@ -270,14 +291,20 @@ CLASS("Garrison", "RefCounted")
 
 		if(T_CALLM0("isDead") or CALLM0(_other, "isDead")) exitWith {};
 
+		if(T_CALLM0("getSide") == CALLM0(_other, "getSide")) exitWith {
+			OOP_ERROR_1("Can't fight %1, same side!", _other);
+			DUMP_CALLSTACK;
+		};
+
 		T_PRVAR(unitCount);
 		T_PRVAR(vehCount);
 
 		(CALLM0(_other, "getComp")) params ["_other_unitCount", "_other_vehCount"];
 		// private _other_unitCount = GETV(_other, "unitCount");
 		// private _other_vehCount = GETV(_other, "vehCount");
-
-		private _msg = format ["Fighting %1 [%2/%3] vs %4 [%5/%6]", _thisObject, _unitCount, _vehCount, _other, _other_unitCount, _other_vehCount];
+		T_PRVAR(id);
+		private _otherId = GETV(_other, "id");
+		private _msg = format ["Fighting g%1 [%2/%3] vs g%4 [%5/%6]", _id, _unitCount, _vehCount, _otherId, _other_unitCount, _other_vehCount];
 
 		OOP_INFO_0(_msg);
 		// OOP_INFO_4("Fighting %1 [%2/%3] vs %3 [%4]", _thisObject, _other);
@@ -293,8 +320,8 @@ CLASS("Garrison", "RefCounted")
 				private _ourStrength = _unitCount * UNIT_STRENGTH + _vehCount * VEHICLE_STRENGTH;
 				private _theirStrength = _other_unitCount * UNIT_STRENGTH + _other_vehCount * VEHICLE_STRENGTH;
 				
-				if(_ourStrength == 0) exitWith { OOP_INFO_1("%1 died", _thisObject) };
-				if(_theirStrength == 0) exitWith { OOP_INFO_1("%1 died", _other) };
+				if(floor _ourStrength == 0) exitWith { OOP_INFO_1("g%1 died", _id) };
+				if(floor _theirStrength == 0) exitWith { OOP_INFO_1("g%1 died", _otherId) };
 
 				// Decide the fate of a random unit.
 				// This probably isn't remotely realistic, but at least stronger garrison should usually win.
@@ -330,27 +357,31 @@ CLASS("Garrison", "RefCounted")
 		T_PRVAR(vehCount);
 		T_PRVAR(pos);
 		T_PRVAR(garrSide);
+		T_PRVAR(id);
 
-		private _newGarrison = NEW("Garrison", [_ownerState]);
 
 		// Cap the new composition based on our composition
-		private _otherUnitCount = _unitCount min _newComp#0;
-		private _otherVehCount = _vehCount min _newComp#1;
+		private _otherUnitCount = _unitCount min floor (_newComp#0);
+		private _otherVehCount = _vehCount min floor (_newComp#1);
 
 		if(_otherUnitCount == 0 and _otherVehCount == 0) exitWith {
-			OOP_ERROR_1("Cannot split garrison from %1 with no forces.", _thisObject)
+			OOP_ERROR_1("Cannot split garrison from %1 with no forces.", _id);
 		};
 
 		// Remove from our comp
 		_unitCount = _unitCount - _otherUnitCount;
 		_vehCount = _vehCount - _otherVehCount;
+		if(_unitCount == 0 and _vehCount == 0) exitWith {
+			OOP_ERROR_1("Cannot split garrison from %1 with ALL forces.", _id);
+		};
 		T_CALLM2("setComp", _unitCount, _vehCount);
 
+		private _newGarrison = NEW("Garrison", [_ownerState]);
 		// Create new marker and update it
 		if (_marker isEqualType "") then {
 			private _newMarker = createMarker [_marker + "_detachment_" + str(time), _pos];
 			_newMarker setMarkerType (markerType _marker);
-			_newMarker setMarkerShape (markerShape _marker);
+			_newMarker setMarkerShape "ICON";
 			SETV(_newGarrison, "marker", _newMarker);
 		};
 
@@ -367,7 +398,16 @@ CLASS("Garrison", "RefCounted")
 		params [P_THISOBJECT, P_STRING("_garr")];
 		T_PRVAR(unitCount);
 		T_PRVAR(vehCount);
+		T_PRVAR(id);
+
+		private _garrId = GETV(_garr, "id");
 		
+		OOP_DEBUG_2("Merging %1 into %2", _id, _garrId);
+
+		if(_unitCount == 0 and _vehCount == 0) exitWith {
+			OOP_ERROR_2("Cannot merge %1 into dead garrison %2.", _garrId, _id);
+		};
+
 		// Merge comps, this is all merge garrisons does
 		private _otherComp = CALLM0(_garr, "getComp");
 		_unitCount = _unitCount + _otherComp#0;

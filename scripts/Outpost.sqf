@@ -13,6 +13,8 @@ CLASS("Outpost", "RefCounted")
 	VARIABLE("pos");
 	VARIABLE("outpostSide");
 	VARIABLE("garrisonId");
+	VARIABLE("spawn");
+	VARIABLE("staging");
 
 	METHOD("new") {
 		params [P_THISOBJECT];
@@ -21,6 +23,8 @@ CLASS("Outpost", "RefCounted")
 		T_SETV("pos", []);
 		T_SETV("outpostSide", side_none);
 		T_SETV("garrisonId", -1);
+		T_SETV("spawn", false);
+		T_SETV("staging", false);
 	} ENDMETHOD;
 
 	METHOD("initFromMarker") {
@@ -32,12 +36,14 @@ CLASS("Outpost", "RefCounted")
 	} ENDMETHOD;
 
 	METHOD("simCopy") {
-		params [P_THISOBJECT, P_STRING("_state")];
+		params [P_THISOBJECT];
 		private _newOutpost = NEW("Outpost", []);
 		SETV(_newOutpost, "id", T_GETV("id"));
 		SETV(_newOutpost, "pos", +T_GETV("pos"));
 		SETV(_newOutpost, "outpostSide", T_GETV("outpostSide"));
 		SETV(_newOutpost, "garrisonId", T_GETV("garrisonId"));
+		SETV(_newOutpost, "spawn", T_GETV("spawn"));
+		SETV(_newOutpost, "staging", T_GETV("staging"));
 		_newOutpost
 	} ENDMETHOD;
 

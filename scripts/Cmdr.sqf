@@ -59,7 +59,9 @@ CLASS("Cmdr", "")
 			// Must be on our side
 			(CALLM0(_x, "getSide") == _cmdrSide) and 
 			// Must have at least a minimum strength
-			{CALLM0(_x, "getStrength") > 10}
+			{CALLM0(_x, "getStrength") > 10} and 
+			// Must not be engaged in another action
+			{ ! (GETV(_x, "currAction") isEqualType "") }
 		};
 
 		private _outposts = GETV(_state, "outposts") select {
@@ -171,7 +173,27 @@ CLASS("Cmdr", "")
 
 	METHOD("update") {
 		params [P_THISOBJECT, P_STRING("_state")];
-		private _profileScope = createProfileScope "Cmdr.update";
+
+		T_PRVAR(activeActions);
+		
+		// Update actions in real state
+		{ CALLM1(_x, "update", _state) } forEach _activeActions;
+
+		// Remove complete actions
+		private _completeActions = _activeActions select { GETV(_x, "complete") };
+
+		// Unref completed actions
+		{
+			UNREF(_x);
+		} forEach _completeActions;
+
+		_activeActions = _activeActions - _completeActions;
+
+		T_SETV("activeActions", _activeActions);
+	} ENDMETHOD;
+	
+	METHOD("plan") {
+		params [P_THISOBJECT, P_STRING("_state")];
 
 		T_PRVAR(activeActions);
 
@@ -179,7 +201,12 @@ CLASS("Cmdr", "")
 		private _simState = CALLM0(_state, "simCopy");
 
 		// Generate possible actions
-		private _newActions = T_CALLM1("generateTakeOutpostActions", _simState) + T_CALLM1("generateAttackActions", _simState) + T_CALLM1("generateReinforceActions", _simState) + T_CALLM1("generateRoadblockActions", _simState);
+		private _newActions = 
+			  T_CALLM1("generateTakeOutpostActions", _simState) 
+			//+ T_CALLM1("generateAttackActions", _simState) 
+			+ T_CALLM1("generateReinforceActions", _simState) 
+			//+ T_CALLM1("generateRoadblockActions", _simState)
+			;
 
 		// Apply active actions to the simstate
 		{
@@ -211,18 +238,18 @@ CLASS("Cmdr", "")
 			DELETE(_x);
 		} forEach _newActions;
 
-		// Update actions in real state
-		{ CALLM1(_x, "update", _state) } forEach _activeActions;
+		// // Update actions in real state
+		// { CALLM1(_x, "update", _state) } forEach _activeActions;
 
-		// Remove complete actions
-		private _completeActions = _activeActions select { GETV(_x, "complete") };
+		// // Remove complete actions
+		// private _completeActions = _activeActions select { GETV(_x, "complete") };
 
-		// Unref completed actions
-		{
-			UNREF(_x);
-		} forEach _completeActions;
+		// // Unref completed actions
+		// {
+		// 	UNREF(_x);
+		// } forEach _completeActions;
 
-		_activeActions = _activeActions - _completeActions;
+		// _activeActions = _activeActions - _completeActions;
 
 		T_SETV("activeActions", _activeActions);
 	} ENDMETHOD;

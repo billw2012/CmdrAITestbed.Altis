@@ -98,7 +98,7 @@ nameStr profilerSetCounter _oop_cnt; };
 
 // Minimum amount of time for a function to take before its profile entry will be written out
 #ifndef OOP_PROFILE_MIN_T
-	#define OOP_PROFILE_MIN_T 0.01
+	#define OOP_PROFILE_MIN_T 0.1
 #endif
 
 /*
