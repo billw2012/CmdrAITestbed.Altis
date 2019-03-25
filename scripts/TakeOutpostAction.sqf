@@ -142,36 +142,13 @@ CLASS("TakeOutpostAction", "Action")
 		private _ourGarr = CALLM1(_state, "getGarrisonById", _ourGarrId);
 		private _ourComp = CALLM0(_ourGarr, "getComp");
 		private _desiredComp = T_CALLM1("getDesiredDetatchmentComp", _state);
-		// private _ourSide = CALLM0(_ourGarr, "getSide");
-
-		// private _targetOutpost = CALLM1(_state, "getOutpostById", _targetOutpostId);
-		// private _targetOutpostPos = CALLM0(_targetOutpost, "getPos");
-		// private _targetGarr = CALLM1(_state, "getAttachedGarrison", _targetOutpostId);
-
-		// // What is the composition dictated by the target outpost?
-		// private _targetComp = if(_targetGarr isEqualType "") then { 
-		// 	// If it is occupied we want 1.5 times the occupying force at least to take it
-		// 	CALLM0(_targetGarr, "getComp") apply { _x * 1.5 }
-		// } else { 
-		// 	// If it is unoccupied we want 0.5 times the desired force at least to take it
-		// 	CALLM2(_state, "getDesiredComp", _targetOutpostPos, _garrSide) apply { _x * 0.5 }
-		// };
-
-		// // Enemy garrison composition (if they exist)
-		// private _targetComp = if(_targetGarr isEqualType "" and {CALLM0(_targetGarr, "getSide") != _ourSide}) then { CALLM0(_targetGarr, "getComp") } else { [0,0] };
-		// // What composition we want to end up with at the outpost (make sure we take at least this much units)
-		// private _targetOutpostDesiredComp = CALLM2(_state, "getDesiredComp", _targetOutpostPos, _ourSide);
-		// _targetComp = [
-		// 	(_targetComp#0 * 1.5) max _targetOutpostDesiredComp#0,
-		// 	(_targetComp#1 * 1.5) max _targetOutpostDesiredComp#1
-		// ];
 
 		// TODO: many things should be done to improve this (and associated scoring).
 		// Just some:
 		//   -- Make sure we take an appropriate combination of units/vehicles
 		//   -- If attacking an entrenched position scale appropriately (at least 3 times defenders)
 		//   -- If area or route is dangerous increase force
-		OOP_INFO_2("_ourComp = %1, _desiredComp = %2", _ourComp, _desiredComp);
+		//OOP_INFO_2("_ourComp = %1, _desiredComp = %2", _ourComp, _desiredComp);
 
 		// detach comp is clamp(0, ourComp - min comp, _targetComp)
 		private _availableComp = [

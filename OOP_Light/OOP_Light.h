@@ -36,7 +36,8 @@
 
 //Enables checks for member accesses at runtime
 // It's a global flag, must be defined here
-#define OOP_ASSERT
+
+//#define OOP_ASSERT
 
 
 // Defining OOP_SCRIPTNAME it will add 	_fnc_scriptName = "..."; to each method created with OOP_Light
@@ -326,16 +327,27 @@ private _classNameStr = OBJECT_PARENT_CLASS_STR(_objNameStr);
 #define STATIC_MEMBER(memNameStr) STATIC_VARIABLE(memNameStr)
 
 #ifdef OOP_PROFILE
+	#define PROFILE_SCOPE_START(scopeName) \
+		private _profileTStart##scopeName = time;
+
+	#define PROFILE_SCOPE_END(scopeName, minT) \
+		private _totalProfileT##scopeName = time - _profileTStart##scopeName; \
+		if(_totalProfileT##scopeName > minT) then { \
+			OOP_PROFILE_2("%1 %2", #scopeName, _totalProfileT##scopeName); \
+		};
+		
 	#define METHOD(methodNameStr) \
 		_oop_methodList pushBackUnique methodNameStr;  \
 		_oop_newMethodList pushBackUnique methodNameStr; \
 		NAMESPACE setVariable [CLASS_METHOD_NAME_STR(_oop_classNameStr, methodNameStr), { \
 			private _profileTStart = time; \
+			private _methodNameStr = methodNameStr; \
+			private _objOrClass = _this select 0; \
 			private _result = _this call
 	#define ENDMETHOD ;\
 			private _totalProfileT = time - _profileTStart; \
 			if(_totalProfileT > OOP_PROFILE_MIN_T) then { \
-				OOP_PROFILE_1("%1", _totalProfileT); \
+				OOP_PROFILE_3("%1.%2 %3", _objOrClass, _methodNameStr, _totalProfileT); \
 			}; \
 			if(!(isNil "_result")) then { _result } else { nil } \
 		} ]
@@ -359,6 +371,7 @@ private _classNameStr = OBJECT_PARENT_CLASS_STR(_objNameStr);
 		_oop_newMethodList pushBackUnique methodNameStr; \
 		NAMESPACE setVariable [CLASS_METHOD_NAME_STR(_oop_classNameStr, methodNameStr), { \
 			private _profileTStart = time; \
+			private _methodNameStr = methodNameStr; \
 			private _result = _this call
 
 	#define STATIC_METHOD_FILE(methodNameStr, path) \

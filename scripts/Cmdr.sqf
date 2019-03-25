@@ -191,15 +191,29 @@ CLASS("Cmdr", "")
 
 		T_SETV("activeActions", _activeActions);
 	} ENDMETHOD;
-	
+
 	METHOD("plan") {
 		params [P_THISOBJECT, P_STRING("_state")];
 
 		T_PRVAR(activeActions);
 
+		OOP_DEBUG_0("Copying simstate ...");
+
 		// Copy state to simstate
 		private _simState = CALLM0(_state, "simCopy");
 
+		OOP_DEBUG_0("Applying %1 active actions to simstate new actions ...");
+
+		PROFILE_SCOPE_START(ApplyActive);
+		// Apply active actions to the simstate
+		{
+			CALLM1(_x, "applyToSim", _simState);
+		} forEach _activeActions;
+		PROFILE_SCOPE_END(ApplyActive);
+
+		OOP_DEBUG_0("Generating new actions ...");
+
+		PROFILE_SCOPE_START(GenerateActions);
 		// Generate possible actions
 		private _newActions = 
 			  T_CALLM1("generateTakeOutpostActions", _simState) 
@@ -207,17 +221,16 @@ CLASS("Cmdr", "")
 			+ T_CALLM1("generateReinforceActions", _simState) 
 			//+ T_CALLM1("generateRoadblockActions", _simState)
 			;
+		PROFILE_SCOPE_END(GenerateActions);
 
-		// Apply active actions to the simstate
-		{
-			CALLM1(_x, "applyToSim", _simState);
-		} forEach _activeActions;
-
-		// Create any new actions
+		PROFILE_SCOPE_START(PlanActions);
+		// Plan new actions
 		while { count _newActions > 0 } do {
+			PROFILE_SCOPE_START(UpdateScores);
 			{
 				CALLM1(_x, "updateScore", _simState);
 			} forEach _newActions;
+			PROFILE_SCOPE_END(UpdateScores);
 
 			_newActions = [_newActions, [], { CALLM0(_x, "getFinalScore") }, "DECEND"] call BIS_fnc_sortBy;
 
@@ -229,27 +242,17 @@ CLASS("Cmdr", "")
 			REF(_bestAction);
 			_activeActions pushBack _bestAction;
 
+			PROFILE_SCOPE_START(ApplyNewActionToSim);
 			// Apply new action to simstate
 			CALLM1(_bestAction, "applyToSim", _simState);
+			PROFILE_SCOPE_END(ApplyNewActionToSim);
 		};
+		PROFILE_SCOPE_END(PlanActions);
 
 		// Delete any remaining actions
 		{
 			DELETE(_x);
 		} forEach _newActions;
-
-		// // Update actions in real state
-		// { CALLM1(_x, "update", _state) } forEach _activeActions;
-
-		// // Remove complete actions
-		// private _completeActions = _activeActions select { GETV(_x, "complete") };
-
-		// // Unref completed actions
-		// {
-		// 	UNREF(_x);
-		// } forEach _completeActions;
-
-		// _activeActions = _activeActions - _completeActions;
 
 		T_SETV("activeActions", _activeActions);
 	} ENDMETHOD;

@@ -316,13 +316,13 @@ CLASS("Garrison", "RefCounted")
 		// Some fake fighting based on relative strengths.
 		for "_i" from 0 to random(_total - 1) do
 		{	
-			if((random 1) <= _distCoeff) then {
-				private _ourStrength = _unitCount * UNIT_STRENGTH + _vehCount * VEHICLE_STRENGTH;
-				private _theirStrength = _other_unitCount * UNIT_STRENGTH + _other_vehCount * VEHICLE_STRENGTH;
-				
-				if(floor _ourStrength == 0) exitWith { OOP_INFO_1("g%1 died", _id) };
-				if(floor _theirStrength == 0) exitWith { OOP_INFO_1("g%1 died", _otherId) };
+			private _ourStrength = _unitCount * UNIT_STRENGTH + _vehCount * VEHICLE_STRENGTH;
+			private _theirStrength = _other_unitCount * UNIT_STRENGTH + _other_vehCount * VEHICLE_STRENGTH;
+			
+			if(floor _ourStrength == 0) exitWith { OOP_INFO_1("g%1 died", _id) };
+			if(floor _theirStrength == 0) exitWith { OOP_INFO_1("g%1 died", _otherId) };
 
+			if((random 1) <= _distCoeff) then {
 				// Decide the fate of a random unit.
 				// This probably isn't remotely realistic, but at least stronger garrison should usually win.
 				if(random(_ourStrength + _theirStrength) < _ourStrength) then {
