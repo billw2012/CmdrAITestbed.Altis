@@ -1,4 +1,3 @@
-Attack action take outpost
 Threat grid
 Threat grid effect on desired comp
 Strategy - frontline
