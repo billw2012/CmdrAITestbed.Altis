@@ -16,10 +16,10 @@ if(!isNil "_gridArray") then
 {
 	private _halfSize = 0.5*ws_squareSize;
 
-	for [{private _i = 0}, {_i < ws_gridSizeX}, {_i = _i + 1}] do //_i is x-pos
+	for "_i" from 0 to ws_gridSizeX - 1 do //_i is x-pos
 	{
 		//_markerColumn = [];
-		for [{private _j = 0}, {_j < ws_gridSizeY}, {_j = _j + 1}] do //_j is y-pos
+		for "_j" from 0 to ws_gridSizeY - 1 do //_j is y-pos
 		{
 			private _wsmName = format ["ws_mrk_%1_%2", _i, _j];
 

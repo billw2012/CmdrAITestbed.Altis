@@ -209,7 +209,7 @@ CLASS("Cmdr", "")
 		{
 			CALLM1(_x, "applyToSim", _simState);
 		} forEach _activeActions;
-		PROFILE_SCOPE_END(ApplyActive);
+		PROFILE_SCOPE_END(ApplyActive, 0.1);
 
 		OOP_DEBUG_0("Generating new actions ...");
 
@@ -221,7 +221,7 @@ CLASS("Cmdr", "")
 			+ T_CALLM1("generateReinforceActions", _simState) 
 			//+ T_CALLM1("generateRoadblockActions", _simState)
 			;
-		PROFILE_SCOPE_END(GenerateActions);
+		PROFILE_SCOPE_END(GenerateActions, 0.1);
 
 		PROFILE_SCOPE_START(PlanActions);
 		// Plan new actions
@@ -230,7 +230,7 @@ CLASS("Cmdr", "")
 			{
 				CALLM1(_x, "updateScore", _simState);
 			} forEach _newActions;
-			PROFILE_SCOPE_END(UpdateScores);
+			PROFILE_SCOPE_END(UpdateScores, 0.1);
 
 			_newActions = [_newActions, [], { CALLM0(_x, "getFinalScore") }, "DECEND"] call BIS_fnc_sortBy;
 
@@ -245,9 +245,9 @@ CLASS("Cmdr", "")
 			PROFILE_SCOPE_START(ApplyNewActionToSim);
 			// Apply new action to simstate
 			CALLM1(_bestAction, "applyToSim", _simState);
-			PROFILE_SCOPE_END(ApplyNewActionToSim);
+			PROFILE_SCOPE_END(ApplyNewActionToSim, 0.1);
 		};
-		PROFILE_SCOPE_END(PlanActions);
+		PROFILE_SCOPE_END(PlanActions, 0.1);
 
 		// Delete any remaining actions
 		{

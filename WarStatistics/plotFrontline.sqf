@@ -10,9 +10,9 @@ _zc = [_sum] call ws_fnc_filterZeroCrossing;
 [_zc, 0.5, _zc] call ws_fnc_filterThreshold; //make the border line less blurry
 _dir = [_sum] call ws_fnc_filterEdgeDir;
 
-for [{private _i = 0}, {_i < ws_gridSizeX}, {_i = _i + 1}] do //_i is x-pos
+for "_i" from 0 to ws_gridSizeX - 1 do //_i is x-pos
 {
-	for [{private _j = 0}, {_j < ws_gridSizeY}, {_j = _j + 1}] do //_j is y-pos
+	for "_j" from 0 to ws_gridSizeY - 1 do //_j is y-pos
 	{
 		private _value = [_zc, _i, _j] call ws_fnc_getValueID;
 		if(_value == 0) then
@@ -38,9 +38,9 @@ private _dir = call ws_fnc_newGridArray;
 [_sum, _dir] call ws_fnc_filterEdgeDir;
 
 
-for [{private _i = 0}, {_i < ws_gridSizeX}, {_i = _i + 1}] do //_i is x-pos
+for "_i" from 0 to ws_gridSizeX - 1 do //_i is x-pos
 {
-	for [{private _j = 0}, {_j < ws_gridSizeY}, {_j = _j + 1}] do //_j is y-pos
+	for "_j" from 0 to ws_gridSizeY - 1 do //_j is y-pos
 	{
 		private _value = [_zc, _i, _j] call ws_fnc_getValueID;
 		if(_value == 0) then

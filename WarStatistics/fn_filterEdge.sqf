@@ -13,9 +13,9 @@ if(_destArray isEqualTo []) then
 
 if(!isNil "_gridArray") then
 {
-	for [{private _i = 0}, {_i < ws_gridSizeX}, {_i = _i + 1}] do //_i is x-pos
+	for "_i" from 0 to ws_gridSizeX - 1 do //_i is x-pos
 	{
-		for [{private _j = 0}, {_j < ws_gridSizeY}, {_j = _j + 1}] do //_j is y-pos
+		for "_j" from 0 to ws_gridSizeY - 1 do //_j is y-pos
 		{
 			private _newValue = [_gridArray, _i, _j] call ws_fnc_getEdgeValueID;
 			[_destArray, _i, _j, _newValue] call ws_fnc_setValueID;
